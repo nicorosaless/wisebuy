@@ -37,6 +37,7 @@ app.add_middleware(
 
 class HTMLBody(BaseModel):
     body: str
+    url: str
 
 class URLData(BaseModel):
     url: str
@@ -90,14 +91,17 @@ demosigma = "gpt-4-turbo"
 async def generate_description(data: HTMLBody):
     try:
         body = data.body
+        web_url = data.url
         if not body:
             raise HTTPException(status_code=400, detail="El body es requerido")
+        if not web_url:
+            raise HTTPException(status_code=400, detail="El url es requerido")
 
         response = openai.ChatCompletion.create(
             model=barato,
             messages=[
-            {"role": "system", "content": "You are an AI assistant specialized in analyzing e-commerce transactions. Your task is to extract and mention only the product purchase details from the HTML content, ignoring any other information. An example of an output would be: The purchase being made includes a 'Men's Classic Crew Neck' item. The product is described as a black crew neck with a size of M, priced at $19.99. The shopping cart shows that 1 item is being purchased."},
-            {"role": "user", "content": f"HTML Content: {body}\n\nPlease extract the product purchase details."}
+                {"role": "system", "content": "You are an AI assistant specialized in analyzing e-commerce transactions. Your task is to extract and mention only the product purchase details from the HTML content and explicitly include the website where the purchase was made. For example: Purchased a black hoodie (€39.99) , a pair of shoes (€24.99) and a necklace (€6.99) from urbanoutfitters.com"},
+                {"role": "user", "content": f"Website URL: {web_url}\nHTML Content: {body}\n\nPlease extract the product purchase details and include the website where the purchase was made."}
             ],
             temperature=0.2,
             max_tokens=2000,
