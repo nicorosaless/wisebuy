@@ -1,10 +1,29 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const loginForm = document.getElementById("login-form");
   const widgetContent = document.getElementById("widget");
+  const userInfoElement = document.getElementById("user-info");
 
-  // Always start with the login form visible
-  loginForm.style.display = "block";
-  widgetContent.style.display = "none";
+  // Function to display the user's email
+  async function displayUserInfo() {
+    const email = await getCurrentUserEmail();
+    if (email) {
+      userInfoElement.textContent = `Logged in as: ${email}`;
+    }
+  }
+
+  // Check if the user is already logged in
+  if (await isLoggedIn()) {
+    console.log("User is already logged in, skipping login form");
+    loginForm.style.display = "none";
+    widgetContent.style.display = "block";
+    
+    // Display the user's email
+    displayUserInfo();
+  } else {
+    // User is not logged in, show login form
+    loginForm.style.display = "block";
+    widgetContent.style.display = "none";
+  }
 
   // Handle login form submission
   document.getElementById("submit-login").addEventListener("click", async () => {
@@ -13,18 +32,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       await login(email, password);
-      alert("Login successful");
+      console.log("Login successful");
       loginForm.style.display = "none";
       widgetContent.style.display = "block";
+      
+      // Display the user's email after login
+      displayUserInfo();
     } catch (error) {
       alert("Login failed: " + error.message);
     }
   });
 
   // Handle logout button
-  document.getElementById("logout").addEventListener("click", () => {
+  document.getElementById("logout").addEventListener("click", async () => {
     logout();
     alert("Logged out successfully");
+    loginForm.style.display = "block";
+    widgetContent.style.display = "none";
+    userInfoElement.textContent = "";
   });
 
   document.getElementById("bank-website").addEventListener("click", () => {

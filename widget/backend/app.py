@@ -2,7 +2,8 @@ import os
 import time
 import requests
 import openai
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,6 +20,7 @@ if not OPENAI_API_KEY:
 openai.api_key = OPENAI_API_KEY
 
 app = FastAPI()
+security = HTTPBearer()
 
 # Configurar CORS
 app.add_middleware(
@@ -130,3 +132,34 @@ async def login(user: UserLogin):
 @app.post("/logout")
 async def logout():
     return {"message": "Logout successful"}
+
+# Replace the mock validate_token function with proper JWT validation
+def validate_token(token: str) -> bool:
+    try:
+        # Decode the JWT token using the secret key
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        # Check if the required claims are present
+        if "email" in decoded_token:
+            # Optionally, verify the user exists in the database
+            user = users_collection.find_one({"email": decoded_token["email"]})
+            return user is not None
+        return False
+    except jwt.PyJWTError:
+        return False
+
+@app.post("/validate-token")
+async def validate_token_endpoint(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    is_valid = validate_token(token)
+    return {"valid": is_valid}
+
+@app.get("/get-current-user")
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if "email" in decoded_token:
+            return {"email": decoded_token["email"]}
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
