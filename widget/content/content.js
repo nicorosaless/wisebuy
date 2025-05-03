@@ -48,7 +48,8 @@ function sendHtmlBodyToServer(htmlBody) {
     .then(data => {
       if (data.description) {
         console.log('Generated Description:', data.description);
-        alert('Generated Description: ' + data.description);
+        // Replace blocking alert with non-blocking notification
+        showNotification('Generated Description: ' + data.description);
 
         // Start listening for new transactions
         listenForNewTransaction(data.description);
@@ -71,13 +72,45 @@ function checkFraud(url) {
     .then(data => {
       if (data.isFraudulent) {
         console.warn('Fraud detected on this page!');
-        alert('Fraud detected on this page! Proceed with caution.');
+        // Replace blocking alert with non-blocking notification
+        showNotification('Fraud detected on this page! Proceed with caution.', true);
       } else {
         console.log('No fraud detected on this page.');
-        alert('No fraud detected on this page.');
+        showNotification('No fraud detected on this page.', false);
       }
     })
     .catch(error => console.error('Error during fraud detection:', error));
+}
+
+// Helper function to show non-blocking notifications
+function showNotification(message, isWarning = false) {
+  // Create a notification element
+  const notification = document.createElement('div');
+  notification.textContent = message;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${isWarning ? '#f44336' : '#4caf50'};
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    z-index: 10000;
+    max-width: 300px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    transition: opacity 0.5s;
+  `;
+  
+  // Add to the page
+  document.body.appendChild(notification);
+  
+  // Remove after 5 seconds
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    setTimeout(() => notification.remove(), 500);
+  }, 5000);
 }
 
 function checkAndLogBody() {
@@ -87,7 +120,7 @@ function checkAndLogBody() {
       console.log('Checking body content for URL:', url);
       checkFraud(url);
       const htmlBody = document.body.innerHTML;
-      console.log('HTML Body Content:', htmlBody);
+      //console.log('HTML Body Content:', htmlBody);
       sendHtmlBodyToServer(htmlBody);
       
     }, 1000); // Delay to allow dynamic content to load
