@@ -1,9 +1,30 @@
+function sendHtmlBodyToServer(htmlBody) {
+  fetch('http://127.0.0.1:8000/generate-description', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ body: htmlBody })
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.description) {
+        console.log('Generated Description:', data.description);
+        alert('Generated Description: ' + data.description);
+      } else {
+        console.error('Error:', data);
+      }
+    })
+    .catch(error => console.error('Error:', error));
+}
+
 function checkAndLogBody() {
   const url = window.location.href.toLowerCase();
-  if (url.includes("/cart") || url.includes("/checkout")) { // Cambiado para que solo registre en la página de checkout
+  if (url.includes('/cart') || url.includes('/checkout')) {
     setTimeout(() => {
-      console.log("HTML Body Content:", document.body.innerHTML);
-      alert("HTML content has been logged to the console.");
+      const htmlBody = document.body.innerHTML;
+      console.log('HTML Body Content:', htmlBody);
+      sendHtmlBodyToServer(htmlBody);
     }, 1000); // Delay to allow dynamic content to load
   }
 }
