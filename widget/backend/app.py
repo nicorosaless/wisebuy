@@ -2,12 +2,16 @@ import os
 import time
 import requests
 import openai
-from fastapi import FastAPI, HTTPException, Depends
+import json
+import asyncio
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
+from bson import ObjectId
 import jwt
 
 # Cargar variables de entorno desde un archivo .env
@@ -112,6 +116,7 @@ DB_NAME = "widget"
 mongo_client = MongoClient(MONGO_URI)
 db = mongo_client[DB_NAME]
 users_collection = db["users"]
+transactions_collection = db["transacciones"]
 
 SECRET_KEY = "your_jwt_secret_key"
 ALGORITHM = "HS256"
@@ -163,3 +168,109 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Invalid token")
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+# Modelo para actualizar transacciones
+class TransactionUpdate(BaseModel):
+    description: str
+
+@app.get("/stream-transactions")
+async def stream_transactions():
+    """
+    Endpoint que monitorea la colección de transacciones en MongoDB
+    y envía un evento SOLO cuando aparece una nueva transacción.
+    Una vez detectada y enviada una transacción, cierra la conexión.
+    """
+    async def event_generator():
+        # Obtener la ID de la última transacción antes de empezar a monitorear
+        last_transaction = transactions_collection.find_one(
+            sort=[("_id", -1)]  # Ordenar por ID en orden descendente
+        )
+        
+        last_id = str(last_transaction["_id"]) if last_transaction else None
+        print(f"Iniciando monitoreo de transacciones posteriores a ID: {last_id}")
+        
+        # Loop hasta encontrar una nueva transacción
+        while True:
+            try:
+                # Buscar solo transacciones más recientes que la última conocida
+                query = {}
+                if last_id:
+                    query["_id"] = {"$gt": ObjectId(last_id)}
+                    
+                # Buscar transacciones no procesadas
+                query["processed"] = {"$ne": True}
+                
+                # Buscar la próxima transacción nueva
+                new_transaction = transactions_collection.find_one(
+                    query,
+                    sort=[("_id", 1)]  # Ordenar por ID de forma ascendente
+                )
+                
+                if new_transaction:
+                    print(f"Nueva transacción detectada: {new_transaction['_id']}")
+                    
+                    # Convertir ObjectId a string para serialización JSON
+                    transaction_data = {
+                        "_id": str(new_transaction["_id"]),
+                        "amount": new_transaction.get("amount"),
+                        "merchant": new_transaction.get("merchant"),
+                        "date": new_transaction.get("date"),
+                    }
+                    
+                    # Enviar el evento con los datos de la transacción
+                    yield f"data: {json.dumps(transaction_data)}\n\n"
+                    
+                    # ¡Importante! Terminar el generador después de enviar una transacción
+                    # Esto cierra la conexión SSE después de procesar una sola transacción
+                    break
+                
+                # Pequeña pausa para evitar sobrecargar el servidor
+                await asyncio.sleep(1)
+                
+            except Exception as e:
+                print(f"Error en stream_transactions: {str(e)}")
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                break  # Terminar en caso de error
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream"
+    )
+
+@app.post("/update-transaction/{transaction_id}")
+async def update_transaction(transaction_id: str, update_data: TransactionUpdate):
+    """
+    Actualiza una transacción con la descripción proporcionada y la marca como procesada.
+    """
+    try:
+        # Convertir el string ID a ObjectId
+        object_id = ObjectId(transaction_id)
+        
+        # Actualizar la transacción con la descripción y marcarla como procesada
+        result = transactions_collection.update_one(
+            {"_id": object_id},
+            {"$set": {"description": update_data.description, "processed": True}}
+        )
+        
+        if result.modified_count > 0:
+            return {"success": True, "message": "Transacción actualizada correctamente"}
+        else:
+            return {"success": False, "message": "Transacción no encontrada o no modificada"}
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+# Endpoint para pruebas - agregar una nueva transacción
+@app.post("/add-test-transaction")
+async def add_test_transaction():
+    """
+    Añade una transacción de prueba a la colección de transacciones.
+    Útil para probar el sistema de monitoreo de transacciones en tiempo real.
+    """
+    transaction = {
+        "amount": 100.0,
+        "merchant": "Tienda de Prueba",
+        "date": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "processed": False
+    }
+    result = transactions_collection.insert_one(transaction)
+    return {"success": True, "transaction_id": str(result.inserted_id)}

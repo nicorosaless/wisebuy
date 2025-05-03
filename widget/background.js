@@ -3,7 +3,7 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.webNavigation.onCompleted.addListener((details) => {
-  if (details.url.includes("/checkout")) {// || details.url.includes("/cart")) {
+  if (details.url.includes("/cart")) {// || details.url.includes("/checkout")) {
     chrome.scripting.executeScript({
       target: { tabId: details.tabId },
       files: ["content/content.js"]

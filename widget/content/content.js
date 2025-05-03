@@ -1,11 +1,13 @@
 function listenForNewTransaction(description) {
+  console.log("Iniciando monitoreo de nuevas transacciones...");
+  
   const eventSource = new EventSource('http://127.0.0.1:8000/stream-transactions');
 
   eventSource.onmessage = function(event) {
     const transaction = JSON.parse(event.data);
-    console.log('New transaction detected:', transaction);
+    console.log('Nueva transacción detectada:', transaction);
 
-    // Update the transaction with the description
+    // Actualizar la transacción con la descripción proporcionada
     fetch(`http://127.0.0.1:8000/update-transaction/${transaction._id}`, {
       method: 'POST',
       headers: {
@@ -16,16 +18,20 @@ function listenForNewTransaction(description) {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          console.log('Transaction updated successfully:', data);
+          console.log('Transacción actualizada correctamente con descripción:', data);
+          // La conexión SSE se cerrará automáticamente porque el servidor termina el generador
         } else {
-          console.error('Failed to update transaction:', data);
+          console.error('Error al actualizar la transacción:', data);
         }
       })
-      .catch(error => console.error('Error updating transaction:', error));
+      .catch(error => console.error('Error al actualizar la transacción:', error));
   };
 
   eventSource.onerror = function(error) {
-    console.error('Error with transaction stream:', error);
+    console.log('Conexión SSE cerrada o error detectado');
+    // La conexión puede cerrarse por:
+    // 1. Error genuino
+    // 2. Finalización normal después de procesar una transacción
     eventSource.close();
   };
 }
@@ -76,7 +82,7 @@ function checkFraud(url) {
 
 function checkAndLogBody() {
   const url = window.location.href.toLowerCase();
-  if (url.includes('/cart') || url.includes('/checkout')) {
+  if (url.includes('/cart')) {// || url.includes('/checkout')) {
     setTimeout(() => {
       console.log('Checking body content for URL:', url);
       checkFraud(url);
