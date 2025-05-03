@@ -17,14 +17,36 @@ function sendHtmlBodyToServer(htmlBody) {
     })
     .catch(error => console.error('Error:', error));
 }
-
+function checkFraud(url) {
+  fetch('http://127.0.0.1:8000/check-fraud', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ url })
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.isFraudulent) {
+        console.warn('Fraud detected on this page!');
+        alert('Fraud detected on this page! Proceed with caution.');
+      } else {
+        console.log('No fraud detected on this page.');
+        alert('No fraud detected on this page.');
+      }
+    })
+    .catch(error => console.error('Error during fraud detection:', error));
+}
 function checkAndLogBody() {
   const url = window.location.href.toLowerCase();
   if (url.includes('/cart') || url.includes('/checkout')) {
     setTimeout(() => {
+      console.log('Checking body content for URL:', url);
+      checkFraud(url);
       const htmlBody = document.body.innerHTML;
       console.log('HTML Body Content:', htmlBody);
       sendHtmlBodyToServer(htmlBody);
+      
     }, 1000); // Delay to allow dynamic content to load
   }
 }

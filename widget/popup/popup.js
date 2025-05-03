@@ -1,11 +1,20 @@
 document.addEventListener("DOMContentLoaded", () => {
   // Handle login/logout buttons
-  document.getElementById("login").addEventListener("click", () => {
-    alert("Log In functionality not implemented yet.");
+  document.getElementById("login").addEventListener("click", async () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    try {
+        await login(email, password);
+        alert("Login successful");
+    } catch (error) {
+        alert("Login failed: " + error.message);
+    }
   });
 
   document.getElementById("logout").addEventListener("click", () => {
-    alert("Log Out functionality not implemented yet.");
+    logout();
+    alert("Logged out successfully");
   });
 
   document.getElementById("bank-website").addEventListener("click", () => {
@@ -43,3 +52,4 @@ document.addEventListener("DOMContentLoaded", () => {
     alert(`Subscription reminders ${event.target.checked ? 'enabled' : 'disabled'}.`);
   });
 });
+

@@ -1,21 +1,22 @@
+import os
+import time
+import requests
+import openai
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from openai import OpenAI
-import os
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
-import requests
-import time
+from pymongo import MongoClient
+import jwt
 
 # Cargar variables de entorno desde un archivo .env
 load_dotenv()
 
-# Configurar la clave de API para el cliente de OpenAI
+# Configurar la clave de API para la API de OpenAI
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
-    raise ValueError("La variable de entorno OPENAI_API_KEY no está configurada. Por favor, configúrala en un archivo .env o en el entorno del sistema.")
-
-client = OpenAI(api_key=OPENAI_API_KEY)
+    raise ValueError("La variable de entorno OPENAI_API_KEY no está configurada.")
+openai.api_key = OPENAI_API_KEY
 
 app = FastAPI()
 
@@ -35,7 +36,7 @@ class URLData(BaseModel):
     url: str
 
 # Configuración de la API de VirusTotal
-VIRUSTOTAL_API_KEY = "ea25dac6c303cbd4c86a268761e45e11e016508c9426e46985bccdfd3c651d9b"  # Sustituye por tu clave
+VIRUSTOTAL_API_KEY = "ea25dac6c303cbd4c86a268761e45e11e016508c9426e46985bccdfd3c651d9b"
 HEADERS = {
     "x-apikey": VIRUSTOTAL_API_KEY,
     "accept": "application/json",
@@ -47,16 +48,13 @@ def scan_and_get_report(url: str) -> dict:
     Escanea una URL usando la API de VirusTotal y devuelve el informe de análisis.
     """
     try:
-        # 1) Enviar la URL para escaneo
         data = f"url={url}"
         resp = requests.post("https://www.virustotal.com/api/v3/urls", headers=HEADERS, data=data)
         resp.raise_for_status()
         analysis_id = resp.json()["data"]["id"]
 
-        # 2) Esperar a que VT complete el análisis
-        time.sleep(15)  # Ajustable según tu cuota y tiempo de análisis
+        time.sleep(15)
 
-        # 3) Recuperar el informe de análisis
         analysis = requests.get(f"https://www.virustotal.com/api/v3/analyses/{analysis_id}", headers=HEADERS)
         analysis.raise_for_status()
         return analysis.json()
@@ -66,17 +64,12 @@ def scan_and_get_report(url: str) -> dict:
 
 @app.post("/check-fraud")
 async def check_fraud(data: URLData):
-    """
-    Endpoint para verificar si una URL es fraudulenta.
-    """
     url = data.url
     if not url:
         raise HTTPException(status_code=400, detail="URL is required")
 
-    # Escanear la URL y obtener el informe
     report = scan_and_get_report(url)
 
-    # Determinar si la URL es fraudulenta
     if "data" in report and "attributes" in report["data"] and "stats" in report["data"]["attributes"]:
         stats = report["data"]["attributes"]["stats"]
         is_fraudulent = stats.get("malicious", 0) > 0
@@ -84,7 +77,7 @@ async def check_fraud(data: URLData):
     else:
         raise HTTPException(status_code=500, detail="Unable to analyze the URL")
 
-barato = "gpt-4-32k"
+barato = "gpt-3.5-turbo"
 demosigma = "gpt-4-turbo"
 
 @app.post("/generate-description")
@@ -94,9 +87,8 @@ async def generate_description(data: HTMLBody):
         if not body:
             raise HTTPException(status_code=400, detail="El body es requerido")
 
-        # Llamada a la API de OpenAI para generar la descripción
-        response = client.chat.completions.create(
-            model=barato,  # Cambiar a un modelo que soporte más tokens
+        response = openai.ChatCompletion.create(
+            model=barato,
             messages=[
                 {"role": "system", "content": "You are an AI assistant specialized in analyzing e-commerce transactions. Based on the HTML content of a payment gateway page, your goal is to determine exactly what is being purchased. Provide a concise and well-structured description of the purchase, including product names, quantities, and any other relevant details."},
                 {"role": "user", "content": f"HTML Content: {body}\n\nPlease provide a concise and well-structured description of the purchase being made."}
@@ -105,17 +97,36 @@ async def generate_description(data: HTMLBody):
             max_tokens=2000,
         )
 
-        # Obtener la descripción generada
-        description = response.choices[0].message.content
-
-        # Mostrar la descripción generada por consola
+        description = response["choices"][0]["message"]["content"]
         print("Generated Description:", description)
-
         return {"description": description}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ocurrió un error: {str(e)}")
 
-if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# Configuración de MongoDB
+MONGO_URI = "mongodb+srv://admin:admin123!123!@cluster0.sr16lln.mongodb.net/"
+DB_NAME = "widget"
+mongo_client = MongoClient(MONGO_URI)
+db = mongo_client[DB_NAME]
+users_collection = db["users"]
+
+SECRET_KEY = "your_jwt_secret_key"
+ALGORITHM = "HS256"
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+@app.post("/login")
+async def login(user: UserLogin):
+    user_data = users_collection.find_one({"email": user.email})
+    if not user_data or user.password != user_data["password"]:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    token = jwt.encode({"email": user.email}, SECRET_KEY, algorithm=ALGORITHM)
+    return {"token": token}
+
+@app.post("/logout")
+async def logout():
+    return {"message": "Logout successful"}
