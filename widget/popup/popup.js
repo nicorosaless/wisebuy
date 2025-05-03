@@ -1,17 +1,27 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Handle login/logout buttons
-  document.getElementById("login").addEventListener("click", async () => {
+  const loginForm = document.getElementById("login-form");
+  const widgetContent = document.getElementById("widget");
+
+  // Always start with the login form visible
+  loginForm.style.display = "block";
+  widgetContent.style.display = "none";
+
+  // Handle login form submission
+  document.getElementById("submit-login").addEventListener("click", async () => {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
     try {
-        await login(email, password);
-        alert("Login successful");
+      await login(email, password);
+      alert("Login successful");
+      loginForm.style.display = "none";
+      widgetContent.style.display = "block";
     } catch (error) {
-        alert("Login failed: " + error.message);
+      alert("Login failed: " + error.message);
     }
   });
 
+  // Handle logout button
   document.getElementById("logout").addEventListener("click", () => {
     logout();
     alert("Logged out successfully");

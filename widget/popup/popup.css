@@ -10,6 +10,42 @@ body {
   padding: 10px;
 }
 
+#login-form {
+  padding: 10px;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+#login-form h2 {
+  text-align: center;
+  color: #333;
+}
+
+#login-form input {
+  display: block;
+  width: calc(100% - 20px);
+  margin: 10px auto;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+#login-form button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#login-form button:hover {
+  background-color: #0056b3;
+}
+
 h1 {
   font-size: 18px;
   text-align: center;
