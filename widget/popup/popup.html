@@ -6,6 +6,367 @@
   <title>Banking Widget</title>
   <link rel="stylesheet" href="popup.css">
 </head>
+<style>
+  body {
+    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    margin: 0;
+    padding: 0;
+    width: 400px;
+    height: 600px;
+    background-color: #fff;
+    color: #000;
+    position: relative;
+    overflow: auto;
+    line-height: 1.4;
+  }
+
+  /* Login Form */
+  #login-form {
+    padding: 30px;
+    background: #fff;
+    border-radius: 20px;
+    width: 80%;
+    margin: 40px auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  #login-form h2 {
+    text-align: center;
+    color: #1a1a1a;
+    margin-bottom: 20px;
+    font-weight: 600;
+  }
+
+  #login-form label {
+    display: block;
+    margin: 10px 0 5px;
+    font-weight: 500;
+    color: #333;
+  }
+
+  #login-form input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #333;
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+
+  #login-form button {
+    width: 100%;
+    padding: 12px;
+    background: #0666eb;
+    color: #ffffff;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  #login-form button:hover {
+    background: #0352bf;
+  }
+
+  /* Widget Header */
+  .app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .app-header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #0666eb;
+    margin: 0;
+  }
+
+  .header-controls {
+    display: flex;
+    align-items: center;
+  }
+
+  .settings-icon {
+    font-size: 20px;
+    margin-right: 15px;
+    cursor: pointer;
+    color: #555;
+  }
+
+  .close-icon {
+    font-size: 28px;
+    color: #888;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  /* Main Layout */
+  .app-layout {
+    display: flex;
+    height: calc(100% - 70px);
+  }
+
+  /* Sidebar Navigation */
+  .sidebar {
+    width: 60px;
+    background-color: #f5f7fa;
+    height: 100%;
+    border-right: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 20px;
+  }
+
+  .sidebar-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+  .sidebar-icon:hover {
+    background-color: #e5e9f0;
+  }
+
+  .sidebar-icon.active {
+    background-color: #e6f0ff;
+    color: #0666eb;
+  }
+
+  .sidebar-icon span {
+    font-size: 18px;
+  }
+
+  /* Content Area */
+  .content-area {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-bottom: 70px; /* Space for actions */
+  }
+
+  /* Home Section with Goals */
+  #home {
+    padding: 15px 20px;
+  }
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 15px 0;
+  }
+
+  .goals-container {
+    margin-bottom: 20px;
+  }
+
+  .goal-item {
+    background-color: #f5f7fa;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 12px;
+  }
+
+  .goal-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+
+  .goal-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
+  }
+
+  .goal-amount {
+    font-weight: 600;
+    color: #0666eb;
+  }
+
+  .goal-progress {
+    height: 8px;
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .goal-progress-bar {
+    height: 100%;
+    background-color: #0666eb;
+    border-radius: 4px;
+  }
+
+  .goal-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #666;
+  }
+
+  /* Alerts Section */
+  #alerts {
+    padding: 10px 20px;
+    display: none;
+  }
+
+  .alert-item {
+    display: flex;
+    padding: 16px 0;
+    border-bottom: 1px solid #f0f0f0;
+    position: relative;
+  }
+
+  .alert-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    flex-shrink: 0;
+  }
+
+  .alert-icon span {
+    font-size: 20px;
+  }
+
+  .subscription-icon {
+    background-color: #e6f0ff;
+    color: #0666eb;
+  }
+
+  .fraud-icon {
+    background-color: #ffebee;
+    color: #f44336;
+  }
+
+  .shopping-icon {
+    background-color: #e3f2fd;
+    color: #2196f3;
+  }
+
+  .goal-icon {
+    background-color: #e8f5e9;
+    color: #4caf50;
+  }
+
+  .purchase-icon {
+    background-color: #ede7f6;
+    color: #673ab7;
+  }
+
+  .alert-content {
+    flex-grow: 1;
+  }
+
+  .alert-content h3 {
+    margin: 0 0 5px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  .alert-content p {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+    line-height: 1.4;
+  }
+
+  .alert-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 8px;
+    background-color: #ffebee;
+    color: #f44336;
+  }
+
+  .caution-tag {
+    background-color: #fff8e1;
+    color: #ffa000;
+  }
+
+  /* Actions */
+  #actions {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px;
+    background: white;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  #actions button {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    background: #0666eb;
+    color: white;
+    border: none;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  #actions button:hover {
+    background: #0352bf;
+  }
+
+  /* Settings Panel */
+  #settings {
+    padding: 20px;
+    background: white;
+    z-index: 10;
+    display: none;
+  }
+
+  #settings h2 {
+    font-size: 18px;
+    margin-bottom: 20px;
+    color: #333;
+  }
+
+  #settings label {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: #333;
+  }
+
+  #settings input[type="checkbox"] {
+    margin-right: 10px;
+  }
+  
+  /* Other Sections */
+  #accounts, #payments, #cards {
+    padding: 15px 20px;
+    display: none;
+  }
+</style>
 <body>
   <div id="login-form" style="display: block;">
     <h2>Login</h2>
@@ -15,33 +376,271 @@
     <input type="password" id="password" required><br>
     <button id="submit-login">Log In</button>
   </div>
-  <div id="widget">
-    <div id="user-info" style="position: absolute; top: 10px; right: 10px; font-size: 12px; color: #666;"></div>
-    <h1>Banking Widget</h1>
+  
+  <div id="widget" style="display: none;">
+    <div class="app-header">
+      <h1>User</h1>
+      <div class="header-controls">
+        <div class="settings-icon" id="toggle-settings">⚙️</div>
+        <div class="close-icon">×</div>
+      </div>
+    </div>
+    
+    <div id="settings">
+      <h2>Settings</h2>
+      <label><input type="checkbox" id="fraud-popup" checked> Show Fraud Alerts</label><br>
+      <label><input type="checkbox" id="compulsive-popup" checked> Show Compulsive Purchase Alerts</label><br>
+      <label><input type="checkbox" id="subscription-popup" checked> Show Subscription Reminders</label><br>
+      <label><input type="checkbox" id="goal-popup" checked> Show Goal Impact Alerts</label><br>
+      <button id="back-from-settings" style="margin-top: 15px; padding: 8px 15px; background: #0666eb; color: white; border: none; border-radius: 6px; cursor: pointer;">Back</button>
+    </div>
+    
+    <div class="app-layout">
+      <div class="sidebar">
+        <div class="sidebar-icon active" data-section="home">
+          <span>🏠</span>
+        </div>
+        <div class="sidebar-icon" data-section="alerts">
+          <span>🔔</span>
+        </div>
+        <div class="sidebar-icon" data-section="accounts">
+          <span>💰</span>
+        </div>
+        <div class="sidebar-icon" data-section="payments">
+          <span>💸</span>
+        </div>
+        <div class="sidebar-icon" data-section="cards">
+          <span>💳</span>
+        </div>
+      </div>
+      
+      <div class="content-area">
+        <div id="home">
+          <h2 class="section-title">Your Goals</h2>
+          <div class="goals-container">
+            <div class="goal-item">
+              <div class="goal-header">
+                <div class="goal-title">Trip to Japan</div>
+                <div class="goal-amount">$1,200 / $2,500</div>
+              </div>
+              <div class="goal-progress">
+                <div class="goal-progress-bar" style="width: 48%"></div>
+              </div>
+              <div class="goal-details">
+                <div>48% complete</div>
+                <div>Est. completion: Oct 2025</div>
+              </div>
+            </div>
+            
+            <div class="goal-item">
+              <div class="goal-header">
+                <div class="goal-title">New Laptop</div>
+                <div class="goal-amount">$850 / $1,500</div>
+              </div>
+              <div class="goal-progress">
+                <div class="goal-progress-bar" style="width: 56%"></div>
+              </div>
+              <div class="goal-details">
+                <div>56% complete</div>
+                <div>Est. completion: Aug 2025</div>
+              </div>
+            </div>
+            
+            <div class="goal-item">
+              <div class="goal-header">
+                <div class="goal-title">Emergency Fund</div>
+                <div class="goal-amount">$3,500 / $5,000</div>
+              </div>
+              <div class="goal-progress">
+                <div class="goal-progress-bar" style="width: 70%"></div>
+              </div>
+              <div class="goal-details">
+                <div>70% complete</div>
+                <div>Est. completion: Jul 2025</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div id="alerts">
+          <div class="alert-item subscription-alert">
+            <div class="alert-icon subscription-icon">
+              <span>💳</span>
+            </div>
+            <div class="alert-content">
+              <h3>Subscription Detector</h3>
+              <p>You're paying for Netflix but haven't used it recently. Cancel subscription?</p>
+            </div>
+          </div>
+          
+          <div class="alert-item fraud-alert">
+            <div class="alert-icon fraud-icon">
+              <span>⚠️</span>
+            </div>
+            <div class="alert-content">
+              <h3>Fraud Detection</h3>
+              <p>This purchase shows signs of potential fraud</p>
+              <div class="alert-tag">Alert</div>
+            </div>
+          </div>
+          
+          <div class="alert-item shopping-alert">
+            <div class="alert-icon shopping-icon">
+              <span>🛍️</span>
+            </div>
+            <div class="alert-content">
+              <h3>Compulsive Shopping</h3>
+              <p>High spending in a short period detected</p>
+              <div class="alert-tag caution-tag">Caution</div>
+            </div>
+          </div>
+          
+          <div class="alert-item goal-alert">
+            <div class="alert-icon goal-icon">
+              <span>🎯</span>
+            </div>
+            <div class="alert-content">
+              <h3>Goal Impact</h3>
+              <p>This could delay your trip to Japan by 12 days</p>
+            </div>
+          </div>
+        </div>
+        
+        <div id="accounts">
+          <h2 class="section-title">Your Accounts</h2>
+          <p>Account details and balances would appear here.</p>
+        </div>
+        
+        <div id="payments">
+          <h2 class="section-title">Payments</h2>
+          <p>Payment options and history would appear here.</p>
+        </div>
+        
+        <div id="cards">
+          <h2 class="section-title">Your Cards</h2>
+          <p>Card management options would appear here.</p>
+        </div>
+      </div>
+    </div>
+    
     <div id="actions">
       <button id="logout">Log Out</button>
       <button id="bank-website">Access Bank's Website</button>
     </div>
-    <div id="settings">
-      <h2>Settings</h2>
-      <label><input type="checkbox" id="fraud-popup"> Show Fraud Alerts</label><br>
-      <label><input type="checkbox" id="compulsive-popup"> Show Compulsive Purchase Alerts</label><br>
-      <label><input type="checkbox" id="subscription-popup"> Show Subscription Reminders</label>
-    </div>
-    <div id="goals">
-      <h2>Your Goals</h2>
-      <ul id="goals-list">
-        <!-- Goals will be dynamically loaded -->
-      </ul>
-    </div>
-    <div id="reminders">
-      <h2>Reminders</h2>
-      <ul id="reminders-list">
-        <!-- Reminders will be dynamically loaded -->
-      </ul>
-    </div>
   </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const loginForm = document.getElementById("login-form");
+      const widgetContent = document.getElementById("widget");
+      
+      // Always start with the login form visible
+      loginForm.style.display = "block";
+      widgetContent.style.display = "none";
+      
+      // Handle login form submission
+      document.getElementById("submit-login").addEventListener("click", () => {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        
+        // Simple validation
+        if (email && password) {
+          loginForm.style.display = "none";
+          widgetContent.style.display = "block";
+          document.getElementById("home").style.display = "block";
+        } else {
+          alert("Please enter both email and password");
+        }
+      });
+      
+      // Handle logout button
+      document.getElementById("logout").addEventListener("click", () => {
+        widgetContent.style.display = "none";
+        loginForm.style.display = "block";
+        // Clear form fields
+        document.getElementById("email").value = "";
+        document.getElementById("password").value = "";
+      });
+      
+      document.getElementById("bank-website").addEventListener("click", () => {
+        window.open("https://www.yourbankwebsite.com", "_blank");
+      });
+      
+      // Toggle settings when clicking on settings icon
+      document.getElementById('toggle-settings').addEventListener('click', function() {
+        document.getElementById('settings').style.display = 'block';
+        document.querySelector('.app-layout').style.display = 'none';
+      });
+      
+      document.getElementById('back-from-settings').addEventListener('click', function() {
+        document.getElementById('settings').style.display = 'none';
+        document.querySelector('.app-layout').style.display = 'flex';
+      });
+      
+      // Sidebar navigation - FIXED VERSION
+      const sidebarIcons = document.querySelectorAll('.sidebar-icon');
+      sidebarIcons.forEach(icon => {
+        icon.addEventListener('click', function() {
+          // Remove active class from all icons
+          sidebarIcons.forEach(i => i.classList.remove('active'));
+          // Add active class to clicked icon
+          this.classList.add('active');
+          
+          // Hide all sections
+          const allSections = document.querySelectorAll('#home, #alerts, #accounts, #payments, #cards');
+          allSections.forEach(section => {
+            section.style.display = 'none';
+          });
+          
+          // Show clicked section
+          const sectionId = this.getAttribute('data-section');
+          const targetSection = document.getElementById(sectionId);
+          if (targetSection) {
+            targetSection.style.display = 'block';
+          }
+        });
+      });
+      
+      // Close widget
+      document.querySelector('.close-icon').addEventListener('click', function() {
+        if (confirm("¿Deseas cerrar la aplicación?")) {
+          console.log('Widget closed');
+          // In a real extension, this might use window.close()
+        }
+      });
+      
+      // Settings functionality
+      document.getElementById('fraud-popup').addEventListener("change", (event) => {
+        const fraudAlerts = document.querySelectorAll('.fraud-alert');
+        fraudAlerts.forEach(alert => {
+          alert.style.display = event.target.checked ? 'flex' : 'none';
+        });
+      });
+      
+      document.getElementById('compulsive-popup').addEventListener("change", (event) => {
+        const shoppingAlerts = document.querySelectorAll('.shopping-alert');
+        shoppingAlerts.forEach(alert => {
+          alert.style.display = event.target.checked ? 'flex' : 'none';
+        });
+      });
+      
+      document.getElementById('subscription-popup').addEventListener("change", (event) => {
+        const subscriptionAlerts = document.querySelectorAll('.subscription-alert');
+        subscriptionAlerts.forEach(alert => {
+          alert.style.display = event.target.checked ? 'flex' : 'none';
+        });
+      });
+      
+      document.getElementById('goal-popup').addEventListener("change", (event) => {
+        const goalAlerts = document.querySelectorAll('.goal-alert');
+        goalAlerts.forEach(alert => {
+          alert.style.display = event.target.checked ? 'flex' : 'none';
+        });
+      });
+    });
+  </script>
   <script src="../api.js"></script>
   <script src="popup.js"></script>
+  
+  
 </body>
 </html>

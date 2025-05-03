@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     widgetContent.style.display = "none";
   }
 
-  // Handle login form submission
+  // Handle login form submission (from original)
   document.getElementById("submit-login").addEventListener("click", async () => {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
@@ -43,48 +43,74 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Handle logout button
-  document.getElementById("logout").addEventListener("click", async () => {
-    logout();
-    alert("Logged out successfully");
+  // Handle logout button (from original)
+  document.getElementById("logout").addEventListener("click", () => {
+    logout()
+    alert("Logging out succesfully...");
     loginForm.style.display = "block";
     widgetContent.style.display = "none";
     userInfoElement.textContent = "";
+
+    // Lógica para cerrar sesión
+
+
   });
 
+  // Bank website link
   document.getElementById("bank-website").addEventListener("click", () => {
-    window.open("https://www.yourbankwebsite.com", "_blank");
+    window.open("https://yourbankwebsite.com", "_blank");
   });
 
-  // Load goals dynamically
-  const goalsList = document.getElementById("goals-list");
-  const goals = ["Save $500 this month", "Pay off credit card debt", "Invest in stocks"];
-  goals.forEach(goal => {
-    const li = document.createElement("li");
-    li.textContent = goal;
-    goalsList.appendChild(li);
+  // Sidebar navigation logic (unified)
+  const sidebarIcons = document.querySelectorAll('.sidebar-icon');
+  sidebarIcons.forEach(icon => {
+    icon.addEventListener('click', function() {
+      // Remove active class from all icons
+      sidebarIcons.forEach(i => i.classList.remove('active'));
+      this.classList.add('active');
+
+      // Hide all sections
+      const allSections = document.querySelectorAll('#home, #alerts, #accounts, #payments, #cards');
+      allSections.forEach(section => section.style.display = 'none');
+
+      // Show the target section
+      const sectionId = this.getAttribute('data-section');
+      const target = document.getElementById(sectionId);
+      if (target) target.style.display = 'block';
+    });
   });
 
-  // Load reminders dynamically
-  const remindersList = document.getElementById("reminders-list");
-  const reminders = ["Netflix subscription due tomorrow", "Gym membership renewal next week"];
-  reminders.forEach(reminder => {
-    const li = document.createElement("li");
-    li.textContent = reminder;
-    remindersList.appendChild(li);
+  // Toggle settings view
+  document.getElementById('toggle-settings').addEventListener('click', () => {
+    document.getElementById('settings').style.display = 'block';
+    document.querySelector('.app-layout').style.display = 'none';
+  });
+  document.getElementById('back-from-settings').addEventListener('click', () => {
+    document.getElementById('settings').style.display = 'none';
+    document.querySelector('.app-layout').style.display = 'flex';
   });
 
-  // Handle settings toggles
-  document.getElementById("fraud-popup").addEventListener("change", (event) => {
-    alert(`Fraud alerts ${event.target.checked ? 'enabled' : 'disabled'}.`);
+  // Close widget confirmation
+  document.querySelector('.close-icon').addEventListener('click', () => {
+    if (confirm("¿Deseas cerrar la aplicación?")) {
+      console.log('Widget closed');
+      // window.close();
+    }
   });
 
-  document.getElementById("compulsive-popup").addEventListener("change", (event) => {
-    alert(`Compulsive purchase alerts ${event.target.checked ? 'enabled' : 'disabled'}.`);
-  });
+  // Settings toggles for alerts
+  const toggleMap = {
+    'fraud-popup': '.fraud-alert',
+    'compulsive-popup': '.shopping-alert',
+    'subscription-popup': '.subscription-alert',
+    'goal-popup': '.goal-alert'
+  };
 
-  document.getElementById("subscription-popup").addEventListener("change", (event) => {
-    alert(`Subscription reminders ${event.target.checked ? 'enabled' : 'disabled'}.`);
+  Object.entries(toggleMap).forEach(([checkboxId, alertSelector]) => {
+    document.getElementById(checkboxId).addEventListener('change', (e) => {
+      document.querySelectorAll(alertSelector).forEach(el => {
+        el.style.display = e.target.checked ? 'flex' : 'none';
+      });
+    });
   });
 });
-

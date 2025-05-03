@@ -1,119 +1,233 @@
 body {
-  font-family: 'Roboto', sans-serif;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
   margin: 0;
   padding: 0;
-  width: 600px;
-  height: 400px;
-  background: #000000;
-  color: #ffffff;
+  width: 400px;
+  height: 600px;
+  background-color: #fff;
+  color: #000;
+  position: relative;
+  overflow: auto;
+  line-height: 1.4;
 }
 
-#widget {
-  padding: 20px;
-  box-shadow: 0 8px 12px rgba(255, 255, 255, 0.1);
-  border-radius: 15px;
-  background-color: #1a1a1a;
-}
-
+/* Login Form */
 #login-form {
-  display: none; /* Hidden by default, shown only when not logged in */
-  padding: 20px;
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 15px;
-  box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+  padding: 30px;
+  background: #fff;
+  border-radius: 20px;
+  width: 80%;
+  margin: 40px auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 #login-form h2 {
   text-align: center;
-  color: #ffffff;
-  font-weight: bold;
+  color: #1a1a1a;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+#login-form label {
+  display: block;
+  margin: 10px 0 5px;
+  font-weight: 500;
+  color: #333;
 }
 
 #login-form input {
-  display: block;
-  width: calc(100% - 40px);
-  margin: 15px auto;
-  padding: 15px;
-  border: 1px solid #444;
-  border-radius: 10px;
-  font-size: 16px;
-  background-color: #333;
-  color: #ffffff;
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #333;
+  font-size: 14px;
+  margin-bottom: 15px;
 }
 
 #login-form button {
-  display: block;
   width: 100%;
-  padding: 15px;
-  background: linear-gradient(135deg, #007bff, #0056b3);
-  color: white;
+  padding: 12px;
+  background: #0666eb;
+  color: #ffffff;
+  font-weight: 600;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
   transition: background 0.3s ease;
 }
 
 #login-form button:hover {
-  background: linear-gradient(135deg, #0056b3, #003f7f);
+  background: #0352bf;
 }
 
-h1 {
+/* Widget Header */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.app-header h1 {
   font-size: 24px;
-  text-align: center;
-  color: #ffffff;
-  font-weight: bold;
+  font-weight: 700;
+  color: #0666eb;
+  margin: 0;
+}
+
+.close-icon {
+  font-size: 28px;
+  color: #888;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* Alerts Section */
+#alerts {
+  padding: 10px 20px;
+}
+
+.alert-item {
+  display: flex;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
+  position: relative;
+}
+
+.alert-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.alert-icon span {
+  font-size: 20px;
+}
+
+.subscription-icon {
+  background-color: #e6f0ff;
+  color: #0666eb;
+}
+
+.fraud-icon {
+  background-color: #ffebee;
+  color: #f44336;
+}
+
+.shopping-icon {
+  background-color: #e3f2fd;
+  color: #2196f3;
+}
+
+.goal-icon {
+  background-color: #e8f5e9;
+  color: #4caf50;
+}
+
+.purchase-icon {
+  background-color: #ede7f6;
+  color: #673ab7;
+}
+
+.alert-content {
+  flex-grow: 1;
+}
+
+.alert-content h3 {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.alert-content p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.alert-tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 8px;
+  background-color: #ffebee;
+  color: #f44336;
+}
+
+.caution-tag {
+  background-color: #fff8e1;
+  color: #ffa000;
+}
+
+/* Actions */
+#actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: white;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 #actions button {
-  display: block;
-  width: 100%;
-  margin: 10px 0;
-  padding: 15px;
-  background: linear-gradient(135deg, #007bff, #0056b3);
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  background: #0666eb;
   color: white;
   border: none;
-  border-radius: 10px;
+  font-weight: 500;
+  font-size: 14px;
   cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  transition: background 0.3s ease;
+  transition: background 0.2s ease;
 }
 
 #actions button:hover {
-  background: linear-gradient(135deg, #0056b3, #003f7f);
+  background: #0352bf;
 }
 
-#settings, #goals, #reminders {
-  margin-top: 30px;
+/* Settings Panel */
+#settings {
+  padding: 20px;
+  background: white;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
 }
 
-h2 {
-  font-size: 20px;
-  color: #ffffff;
+#settings h2 {
+  font-size: 18px;
+  margin-bottom: 20px;
+  color: #333;
+}
+
+#settings label {
+  display: flex;
+  align-items: center;
   margin-bottom: 15px;
-  font-weight: bold;
+  font-size: 14px;
+  color: #333;
 }
 
-label {
-  font-size: 16px;
-  color: #ffffff;
-  font-weight: bold;
-}
-
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-ul li {
-  font-size: 16px;
-  color: #ffffff;
-  margin: 10px 0;
-  padding: 10px;
-  background-color: #333;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
+#settings input[type="checkbox"] {
+  margin-right: 10px;
 }
