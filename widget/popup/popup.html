@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banking Widget</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="widget">
+    <h1>Banking Widget</h1>
+    <div id="actions">
+      <button id="login">Log In</button>
+      <button id="logout">Log Out</button>
+      <button id="bank-website">Access Bank's Website</button>
+    </div>
+    <div id="settings">
+      <h2>Settings</h2>
+      <label><input type="checkbox" id="fraud-popup"> Show Fraud Alerts</label><br>
+      <label><input type="checkbox" id="compulsive-popup"> Show Compulsive Purchase Alerts</label><br>
+      <label><input type="checkbox" id="subscription-popup"> Show Subscription Reminders</label>
+    </div>
+    <div id="goals">
+      <h2>Your Goals</h2>
+      <ul id="goals-list">
+        <!-- Goals will be dynamically loaded -->
+      </ul>
+    </div>
+    <div id="reminders">
+      <h2>Reminders</h2>
+      <ul id="reminders-list">
+        <!-- Reminders will be dynamically loaded -->
+      </ul>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
