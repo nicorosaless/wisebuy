@@ -18,6 +18,7 @@ function sendHtmlBodyToServer(htmlBody) {
     .catch(error => console.error('Error:', error));
 }
 function checkFraud(url) {
+  console.log('Sending request to check fraud for URL:', url); // Log para verificar la URL
   fetch('http://127.0.0.1:8000/check-fraud', {
     method: 'POST',
     headers: {
@@ -25,8 +26,12 @@ function checkFraud(url) {
     },
     body: JSON.stringify({ url })
   })
-    .then(response => response.json())
+    .then(response => {
+      console.log('Response status:', response.status); // Log para verificar el estado de la respuesta
+      return response.json();
+    })
     .then(data => {
+      console.log('Response data:', data); // Log para verificar los datos de la respuesta
       if (data.isFraudulent) {
         console.warn('Fraud detected on this page!');
         alert('Fraud detected on this page! Proceed with caution.');

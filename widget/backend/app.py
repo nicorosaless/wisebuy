@@ -48,14 +48,17 @@ def scan_and_get_report(url: str) -> dict:
     Escanea una URL usando la API de VirusTotal y devuelve el informe de análisis.
     """
     try:
+        print(f"Scanning URL: {url}")  # Log para verificar la URL
         data = f"url={url}"
         resp = requests.post("https://www.virustotal.com/api/v3/urls", headers=HEADERS, data=data)
+        print(f"VirusTotal response status: {resp.status_code}")  # Log para verificar el estado de la respuesta
         resp.raise_for_status()
         analysis_id = resp.json()["data"]["id"]
 
         time.sleep(15)
 
         analysis = requests.get(f"https://www.virustotal.com/api/v3/analyses/{analysis_id}", headers=HEADERS)
+        print(f"Analysis response status: {analysis.status_code}")  # Log para verificar el estado del análisis
         analysis.raise_for_status()
         return analysis.json()
     except Exception as e:
