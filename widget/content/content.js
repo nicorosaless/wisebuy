@@ -330,15 +330,35 @@ function sendHtmlBodyToServer(htmlBody) {
 
 function checkAndLogBody() {
   const url = window.location.href.toLowerCase();
-  if (url.includes('/cart')) {// || url.includes('/checkout')) {
+  
+  // Enhanced cart page detection for various e-commerce sites
+  const isCartPage = url.includes('/cart') || 
+                     url.includes('cart.html') || 
+                     url.includes('/basket') || 
+                     url.includes('/shopping-bag') ||
+                     url.includes('/carrito') ||  // Spanish sites
+                     url.endsWith('/cart') ||
+                     document.title.toLowerCase().includes('cart') ||
+                     document.title.toLowerCase().includes('basket') ||
+                     document.title.toLowerCase().includes('shopping bag');
+                    
+  // Use sessionStorage to prevent multiple analyses on the same page
+  const currentPageKey = 'analyzed_' + url.replace(/[^a-z0-9]/gi, '_');
+  const alreadyAnalyzed = sessionStorage.getItem(currentPageKey);
+  
+  if (isCartPage && !alreadyAnalyzed) {
+    console.log('Cart page detected at:', url);
+    
+    // Mark this URL as analyzed to prevent duplicate notifications
+    sessionStorage.setItem(currentPageKey, 'true');
+    
+    // Delay to ensure content has loaded
     setTimeout(() => {
-      console.log('Checking body content for URL:', url);
+      console.log('Analyzing cart content');
       checkFraud(url);
       const htmlBody = document.body.innerHTML;
-      //console.log('HTML Body Content:', htmlBody);
       sendHtmlBodyToServer(htmlBody);
-      
-    }, 1000); // Delay to allow dynamic content to load
+    }, 2000); // Single delay to allow dynamic content to load
   }
 }
 
@@ -361,19 +381,35 @@ function checkAndLogBody() {
 // Listen for back/forward navigation
 window.addEventListener("popstate", checkAndLogBody);
 
-// Fire once when DOM is ready
-// if (document.readyState === "complete" || document.readyState === "interactive") {
-//   checkAndLogBody();
-// } else {
-//   document.addEventListener("DOMContentLoaded", checkAndLogBody);
-// }
+// Fire when DOM is ready (uncommented and improved)
+if (document.readyState === "complete" || document.readyState === "interactive") {
+  setTimeout(checkAndLogBody, 1000); // Delay to ensure page is fully loaded
+} else {
+  document.addEventListener("DOMContentLoaded", () => setTimeout(checkAndLogBody, 1000));
+}
+
+// Also add a fallback for sites that load content after DOMContentLoaded
+window.addEventListener("load", () => setTimeout(checkAndLogBody, 1500));
 
 // Function to observe URL changes dynamically
 function observeUrlChanges() {
   let lastUrl = window.location.href;
-  const observer = new MutationObserver(() => {
+  
+  // Method 1: Poll for URL changes
+  setInterval(() => {
     const currentUrl = window.location.href;
     if (currentUrl !== lastUrl) {
+      console.log("URL change detected (polling):", currentUrl);
+      lastUrl = currentUrl;
+      checkAndLogBody();
+    }
+  }, 1000);
+  
+  // Method 2: Observer for DOM changes that might indicate navigation
+  const observer = new MutationObserver((mutations) => {
+    const currentUrl = window.location.href;
+    if (currentUrl !== lastUrl) {
+      console.log("URL change detected (MutationObserver):", currentUrl);
       lastUrl = currentUrl;
       checkAndLogBody();
     }
@@ -384,6 +420,49 @@ function observeUrlChanges() {
 
 // Call observeUrlChanges to monitor URL changes
 observeUrlChanges();
+
+// Debug function to help with troubleshooting widget activation
+function debugWidgetActivation() {
+  const url = window.location.href.toLowerCase();
+  console.log("%c Widget Debug Info ", "background: #333; color: #bada55; font-size: 16px;");
+  console.log("Current URL:", url);
+  
+  // Log all the patterns we check for
+  console.log("URL includes '/cart':", url.includes('/cart'));
+  console.log("URL includes 'cart.html':", url.includes('cart.html'));
+  console.log("URL includes '/basket':", url.includes('/basket'));
+  console.log("URL includes '/shopping-bag':", url.includes('/shopping-bag'));
+  console.log("URL includes '/carrito':", url.includes('/carrito'));
+  console.log("URL ends with '/cart':", url.endsWith('/cart'));
+  console.log("Document title:", document.title);
+  console.log("Title includes 'cart':", document.title.toLowerCase().includes('cart'));
+  console.log("DOM Ready state:", document.readyState);
+
+  // Enhanced cart page detection for various e-commerce sites
+  const isCartPage = url.includes('/cart') || 
+                     url.includes('cart.html') || 
+                     url.includes('/basket') || 
+                     url.includes('/shopping-bag') ||
+                     url.includes('/carrito') ||  // Spanish sites
+                     url.endsWith('/cart') ||
+                     document.title.toLowerCase().includes('cart') ||
+                     document.title.toLowerCase().includes('basket') ||
+                     document.title.toLowerCase().includes('shopping bag');
+                     
+  console.log("Is this a cart page?", isCartPage);
+  
+  // Only show debug notification if we haven't analyzed this page yet
+  const debugKey = 'debug_notification_' + url.replace(/[^a-z0-9]/gi, '_');
+  if (isCartPage && !sessionStorage.getItem(debugKey)) {
+    sessionStorage.setItem(debugKey, 'true');
+    // Show debug notification that will auto-close
+    const notification = showNotification("Widget has detected this as a cart page!", false);
+    setTimeout(() => notification.close(), 5000);
+  }
+}
+
+// Call debug function after page load
+window.addEventListener("load", () => setTimeout(debugWidgetActivation, 2000));
 
 // Function to save the user's session token persistently
 function saveSessionToken(token) {
