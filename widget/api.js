@@ -80,3 +80,31 @@ async function getCurrentUserEmail() {
         return null;
     }
 }
+
+// Function to get the user's goals from MongoDB
+async function getUserGoals() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+        return null;
+    }
+    
+    try {
+        const response = await fetch("http://localhost:8000/get-user-goals", {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            console.error("Error fetching goals:", response.statusText);
+            return [];
+        }
+        
+        const data = await response.json();
+        return data.goals;
+    } catch (error) {
+        console.error("Error getting user goals:", error);
+        return [];
+    }
+}

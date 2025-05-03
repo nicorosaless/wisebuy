@@ -2,12 +2,69 @@ document.addEventListener("DOMContentLoaded", async () => {
   const loginForm = document.getElementById("login-form");
   const widgetContent = document.getElementById("widget");
   const userInfoElement = document.getElementById("user-info");
+  const goalsContainer = document.getElementById("goals-container");
 
   // Function to display the user's email
   async function displayUserInfo() {
     const email = await getCurrentUserEmail();
     if (email) {
       userInfoElement.textContent = `Logged in as: ${email}`;
+    }
+  }
+
+  // Function to load and display user goals
+  async function loadUserGoals() {
+    try {
+      goalsContainer.innerHTML = '<div class="loading-goals">Loading goals...</div>';
+      
+      const goals = await getUserGoals();
+      
+      if (!goals || goals.length === 0) {
+        goalsContainer.innerHTML = '<div class="no-goals">No goals found. Create some goals to track your progress!</div>';
+        return;
+      }
+      
+      // Clear the container
+      goalsContainer.innerHTML = '';
+      
+      // Display up to 3 goals
+      const goalsToDisplay = goals.slice(0, 3);
+      
+      goalsToDisplay.forEach(goal => {
+        // Calculate progress percentage
+        const progressPercentage = Math.round((goal.currentAmount / goal.targetAmount) * 100);
+        
+        // Format date
+        const deadline = new Date(goal.deadline);
+        const deadlineFormatted = deadline.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+        
+        // Create goal HTML element
+        const goalItem = document.createElement("div");
+        goalItem.className = "goal-item";
+        goalItem.innerHTML = `
+          <div class="goal-header">
+            <div class="goal-title">${goal.name}</div>
+            <div class="goal-amount">${goal.currentAmount.toLocaleString()} / ${goal.targetAmount.toLocaleString()} ${goal.currency}</div>
+          </div>
+          <div class="goal-progress">
+            <div class="goal-progress-bar" style="width: ${progressPercentage}%"></div>
+          </div>
+          <div class="goal-details">
+            <div>${progressPercentage}% complete</div>
+            <div>Deadline: ${deadlineFormatted}</div>
+          </div>
+          <div class="goal-impact">Impact: ${goal.impactOfCurrentSpending}</div>
+        `;
+        
+        goalsContainer.appendChild(goalItem);
+      });
+    } catch (error) {
+      console.error("Error loading goals:", error);
+      goalsContainer.innerHTML = '<div class="error-loading-goals">Failed to load goals. Please try again later.</div>';
     }
   }
 
@@ -19,6 +76,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Display the user's email
     displayUserInfo();
+    
+    // Load user goals
+    loadUserGoals();
   } else {
     // User is not logged in, show login form
     loginForm.style.display = "block";
@@ -38,6 +98,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       
       // Display the user's email after login
       displayUserInfo();
+      
+      // Load user goals after login
+      loadUserGoals();
     } catch (error) {
       alert("Login failed: " + error.message);
     }
