@@ -1,3 +1,182 @@
+// Notification manager to handle multiple notifications
+const NotificationManager = {
+  notifications: [],
+  topOffset: 20, // Initial top position
+  gap: 10, // Gap between notifications
+  
+  // Create a new notification
+  show(message, isWarning = false) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: ${this.topOffset}px;
+      right: 20px;
+      background: ${isWarning ? '#f44336' : '#4caf50'};
+      color: white;
+      padding: 15px 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 10000;
+      max-width: 300px;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    `;
+    
+    // Add message text
+    const messageDiv = document.createElement('div');
+    messageDiv.textContent = message;
+    notification.appendChild(messageDiv);
+    
+    // Add to the page
+    document.body.appendChild(notification);
+    
+    // Calculate height and add to the array
+    const notificationHeight = notification.offsetHeight;
+    const notificationObj = {
+      element: notification,
+      height: notificationHeight,
+      id: Date.now() // Unique identifier
+    };
+    
+    // Add to array and update positions
+    this.notifications.push(notificationObj);
+    this.updatePositions();
+    
+    return {
+      id: notificationObj.id,
+      element: notification,
+      close: () => this.close(notificationObj.id),
+      update: (newMessage) => {
+        messageDiv.textContent = newMessage;
+      },
+      setColor: (color) => {
+        notification.style.backgroundColor = color;
+      }
+    };
+  },
+  
+  // Close a notification by ID
+  close(id) {
+    const index = this.notifications.findIndex(n => n.id === id);
+    if (index >= 0) {
+      const notification = this.notifications[index];
+      
+      // Animate opacity
+      notification.element.style.opacity = '0';
+      
+      // Remove from DOM after animation
+      setTimeout(() => {
+        notification.element.remove();
+        this.notifications.splice(index, 1);
+        this.updatePositions(); // Reposition remaining notifications
+      }, 300);
+    }
+  },
+  
+  // Update the positions of all notifications
+  updatePositions() {
+    let currentTop = this.topOffset;
+    
+    this.notifications.forEach(notification => {
+      notification.element.style.top = currentTop + 'px';
+      currentTop += notification.height + this.gap;
+    });
+  }
+};
+
+// Helper function to show non-blocking notifications
+function showNotification(message, isWarning = false) {
+  return NotificationManager.show(message, isWarning);
+}
+
+// Helper function to add a progress bar to a notification
+function addProgressBar(notification) {
+  const progressContainer = document.createElement('div');
+  progressContainer.style.cssText = `
+    width: 100%;
+    height: 6px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    overflow: hidden;
+  `;
+  
+  const progressBar = document.createElement('div');
+  progressBar.style.cssText = `
+    height: 100%;
+    width: 0%;
+    background-color: white;
+    border-radius: 3px;
+    transition: width 0.3s linear;
+  `;
+  
+  progressContainer.appendChild(progressBar);
+  notification.element.appendChild(progressContainer);
+  
+  return {
+    update: (percent) => {
+      progressBar.style.width = `${percent}%`;
+    },
+    complete: () => {
+      progressBar.style.width = '100%';
+    }
+  };
+}
+
+// Helper function to add a loading spinner to a notification
+function addLoadingSpinner(notification) {
+  const spinner = document.createElement('div');
+  spinner.style.cssText = `
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+    align-self: center;
+  `;
+  
+  // Add keyframes for the spinner animation
+  if (!document.getElementById('spinnerAnimation')) {
+    const style = document.createElement('style');
+    style.id = 'spinnerAnimation';
+    style.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+  
+  // Create a wrapper for spinner and text
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `
+    display: flex;
+    align-items: center;
+  `;
+  
+  wrapper.appendChild(spinner);
+  
+  // Move the text inside the wrapper
+  const textDiv = notification.element.querySelector('div:first-child');
+  if (textDiv) {
+    wrapper.appendChild(textDiv);
+    notification.element.prepend(wrapper);
+  } else {
+    notification.element.prepend(wrapper);
+  }
+  
+  return {
+    remove: () => spinner.remove()
+  };
+}
+
 function listenForNewTransaction(description) {
   console.log("Iniciando monitoreo de nuevas transacciones...");
   
@@ -36,31 +215,11 @@ function listenForNewTransaction(description) {
   };
 }
 
-function sendHtmlBodyToServer(htmlBody) {
-  fetch('http://127.0.0.1:8000/generate-description', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ body: htmlBody })
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (data.description) {
-        console.log('Generated Description:', data.description);
-        // Replace blocking alert with non-blocking notification
-        showNotification('Generated Description: ' + data.description);
-
-        // Start listening for new transactions
-        listenForNewTransaction(data.description);
-      } else {
-        console.error('Error:', data);
-      }
-    })
-    .catch(error => console.error('Error:', error));
-}
-
 function checkFraud(url) {
+  // Create notification with loading spinner
+  const notification = showNotification('Checking for fraud...', false);
+  const spinner = addLoadingSpinner(notification);
+  
   fetch('http://127.0.0.1:8000/check-fraud', {
     method: 'POST',
     headers: {
@@ -70,47 +229,103 @@ function checkFraud(url) {
   })
     .then(response => response.json())
     .then(data => {
+      // Remove spinner when complete
+      spinner.remove();
+      
+      // Update notification with results
       if (data.isFraudulent) {
-        console.warn('Fraud detected on this page!');
-        // Replace blocking alert with non-blocking notification
-        showNotification('Fraud detected on this page! Proceed with caution.', true);
+        notification.setColor('#f44336'); // Red for warning
+        notification.update('Fraud detected on this page! Proceed with caution.');
       } else {
-        console.log('No fraud detected on this page.');
-        showNotification('No fraud detected on this page.', false);
+        notification.setColor('#4caf50'); // Green for safe
+        notification.update('No fraud detected on this page.');
       }
+      
+      // Close notification after delay
+      setTimeout(() => {
+        notification.close();
+      }, 5000);
     })
-    .catch(error => console.error('Error during fraud detection:', error));
+    .catch(error => {
+      console.error('Error during fraud detection:', error);
+      
+      // Remove spinner and show error
+      spinner.remove();
+      notification.setColor('#ff9800'); // Orange for error
+      notification.update('Error checking fraud: ' + error.message);
+      
+      // Close notification after delay
+      setTimeout(() => {
+        notification.close();
+      }, 5000);
+    });
 }
 
-// Helper function to show non-blocking notifications
-function showNotification(message, isWarning = false) {
-  // Create a notification element
-  const notification = document.createElement('div');
-  notification.textContent = message;
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: ${isWarning ? '#f44336' : '#4caf50'};
-    color: white;
-    padding: 15px;
-    border-radius: 5px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    z-index: 10000;
-    max-width: 300px;
-    font-family: Arial, sans-serif;
-    font-size: 14px;
-    transition: opacity 0.5s;
-  `;
+function sendHtmlBodyToServer(htmlBody) {
+  // Create notification with loading indicator
+  const notification = showNotification('Analyzing your cart...', false);
+  const progress = addProgressBar(notification);
   
-  // Add to the page
-  document.body.appendChild(notification);
+  // Simulate progress updates (can't track actual progress of the API call)
+  let progressValue = 0;
+  const progressInterval = setInterval(() => {
+    progressValue += 5;
+    if (progressValue > 90) {
+      clearInterval(progressInterval);
+    }
+    progress.update(progressValue);
+  }, 300);
   
-  // Remove after 5 seconds
-  setTimeout(() => {
-    notification.style.opacity = '0';
-    setTimeout(() => notification.remove(), 500);
-  }, 5000);
+  fetch('http://127.0.0.1:8000/generate-description', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ body: htmlBody })
+  })
+    .then(response => response.json())
+    .then(data => {
+      // Clear progress interval and complete the progress bar
+      clearInterval(progressInterval);
+      progress.complete();
+      
+      if (data.description) {
+        // Update notification with the description
+        setTimeout(() => {
+          notification.update('Purchase successfully analyzed!');
+          console.log('Description:', data.description);
+          // Close notification after delay
+          setTimeout(() => {
+            notification.close();
+          }, 10000);
+        }, 500); // Small delay to show completed progress bar
+        
+        // Start listening for new transactions
+        listenForNewTransaction(data.description);
+      } else {
+        console.error('Error:', data);
+        notification.setColor('#ff9800'); // Orange for error
+        notification.update('Error analyzing purchase.');
+        
+        // Close notification after delay
+        setTimeout(() => {
+          notification.close();
+        }, 5000);
+      }
+    })
+    .catch(error => {
+      // Clear progress interval and show error
+      clearInterval(progressInterval);
+      console.error('Error:', error);
+      
+      notification.setColor('#ff9800'); // Orange for error
+      notification.update('Error analyzing purchase: ' + error.message);
+      
+      // Close notification after delay
+      setTimeout(() => {
+        notification.close();
+      }, 5000);
+    });
 }
 
 function checkAndLogBody() {
