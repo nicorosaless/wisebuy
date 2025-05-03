@@ -96,8 +96,8 @@ async def generate_description(data: HTMLBody):
         response = openai.ChatCompletion.create(
             model=barato,
             messages=[
-                {"role": "system", "content": "You are an AI assistant specialized in analyzing e-commerce transactions. Based on the HTML content of a payment gateway page, your goal is to determine exactly what is being purchased. Provide a concise and well-structured description of the purchase, including product names, quantities, and any other relevant details."},
-                {"role": "user", "content": f"HTML Content: {body}\n\nPlease provide a concise and well-structured description of the purchase being made."}
+            {"role": "system", "content": "You are an AI assistant specialized in analyzing e-commerce transactions. Your task is to extract and mention only the product purchase details from the HTML content, ignoring any other information. An example of an output would be: The purchase being made includes a 'Men's Classic Crew Neck' item. The product is described as a black crew neck with a size of M, priced at $19.99. The shopping cart shows that 1 item is being purchased."},
+            {"role": "user", "content": f"HTML Content: {body}\n\nPlease extract the product purchase details."}
             ],
             temperature=0.2,
             max_tokens=2000,
