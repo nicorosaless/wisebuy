@@ -1,10 +1,17 @@
 # WiseBuy
 
+Developed for HackUPC 2025
+
+DevPost submission: https://devpost.com/software/wisebuy-hdinj7
+
+Preview YouTube Video: https://youtu.be/ydEnkvGfKkQ
+
 ## Overview
-WiseBuy is a browser extension that helps users make better financial decisions by analyzing their online shopping behavior. The extension detects when users are on e-commerce checkout pages, analyzes the content for potential fraud, monitors subscription services, and provides insights about purchases in relation to financial goals.
+WiseBuy is a browser extension that helps users make better financial decisions by analyzing their online shopping behavior. The extension detects when users are on e-commerce checkout pages, analyzes the content for descriptive transactions, checks for potential fraud, reminds subscription services, and provides insights about purchases in relation to financial goals.
 
 ## Features
 
+- **Descriptive Transactions**: Provides explainability to the transactions
 - **Fraud Detection**: Analyzes URLs and website content to detect potential fraudulent e-commerce sites
 - **Shopping Analysis**: Monitors purchases and provides insights about spending habits
 - **Subscription Management**: Identifies subscription services and provides reminders to cancel unused subscriptions
@@ -26,8 +33,6 @@ widgethackupc/
 │   ├── content/              # Content scripts
 │   │   └── content.js        # Script injected into web pages
 │   ├── icons/                # Extension icons
-│   ├── periocidad/           # Subscription frequency analysis
-│   │   └── periocidad.py     # Subscription detection algorithm
 │   └── popup/                # Extension popup UI
 │       ├── popup.css         # Popup styles
 │       ├── popup.html        # Popup HTML structure
