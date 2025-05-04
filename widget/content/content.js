@@ -508,6 +508,48 @@ function checkFraud(url) {
     });
 }
 
+// Helper function to safely parse JSON with markdown cleanup if needed
+function safeParseJSON(jsonString) {
+  // First try direct parsing
+  try {
+    return JSON.parse(jsonString);
+  } catch (e) {
+    console.log("Initial JSON parse failed, attempting cleanup:", e);
+    
+    // Check if it might be wrapped in markdown code blocks
+    if (typeof jsonString === 'string') {
+      try {
+        // Remove markdown code block formatting if present
+        let cleanedJson = jsonString;
+        
+        // Handle JSON wrapped in code blocks (```json ... ```)
+        if (cleanedJson.includes("```")) {
+          const matches = cleanedJson.match(/```(?:json)?\s*([\s\S]*?)```/);
+          if (matches && matches[1]) {
+            cleanedJson = matches[1].trim();
+          }
+        }
+        
+        // Parse the cleaned JSON
+        return JSON.parse(cleanedJson);
+      } catch (e2) {
+        console.error("Failed to parse JSON even after cleanup:", e2);
+        // Return a fallback object to prevent further errors
+        return {
+          description_larga: "Error parsing description: " + jsonString.substring(0, 100) + "...",
+          description_clean: "Parse error - see console for details"
+        };
+      }
+    }
+    
+    // If string parsing failed or input wasn't a string
+    return {
+      description_larga: "Invalid input format",
+      description_clean: "Parse error - invalid input"
+    };
+  }
+}
+
 function sendHtmlBodyToServer(htmlBody) {
   // Create notification with loading indicator
   const notification = showNotification('Analyzing your cart...', false);
@@ -542,11 +584,11 @@ function sendHtmlBodyToServer(htmlBody) {
       clearInterval(progressInterval);
       progress.complete();
       
-      if (data.description) {
+      if (data.description_json) {
         // Update notification with the description
         setTimeout(() => {
           notification.update('Purchase successfully analyzed!');
-          console.log('Description:', data.description);
+          console.log('Description JSON:', data.description_json);
           // Close notification after delay
           setTimeout(() => {
             notification.close();
@@ -585,7 +627,7 @@ function sendHtmlBodyToServer(htmlBody) {
                   },
                   body: JSON.stringify({ 
                     transactions: txData.transactions, 
-                    purchase_description: data.description,
+                    purchase_description: data.description_json,
                     user_goals: userGoals
                   })
                 });
@@ -600,7 +642,7 @@ function sendHtmlBodyToServer(htmlBody) {
                   },
                   body: JSON.stringify({ 
                     transactions: txData.transactions, 
-                    purchase_description: data.description,
+                    purchase_description: data.description_json,
                     user_goals: [] 
                   })
                 });
@@ -624,18 +666,24 @@ function sendHtmlBodyToServer(htmlBody) {
               }, 20000);
               
               console.log('Recomendación procesada:', recData);
+              
+              // Parse the description JSON to get description_clean for transaction updates
+              const descriptionObj = safeParseJSON(data.description_json);
+              const cleanDescription = descriptionObj.description_clean || descriptionObj.description_larga || data.description_json;
               // Iniciar monitoreo tras obtener recomendación
-              listenForNewTransaction(data.description);
+              listenForNewTransaction(cleanDescription);
             })
             .catch(err => {
               console.error('Error fetching recommendation or transactions:', err);
               // Iniciar monitoreo incluso con error
-              listenForNewTransaction(data.description);
+              listenForNewTransaction(data.description_json);
             });
           } else {
             console.log('Site is not safe, skipping recommendation');
             // Just monitor for new transactions without making recommendations
-            listenForNewTransaction(data.description);
+            const descriptionObj = safeParseJSON(data.description_json);
+            const cleanDescription = descriptionObj.description_clean || descriptionObj.description_larga || data.description_json;
+            listenForNewTransaction(cleanDescription);
           }
         });
       } else {

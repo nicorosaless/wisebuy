@@ -98,18 +98,54 @@ async def generate_description(data: HTMLBody):
             raise HTTPException(status_code=400, detail="El url es requerido")
 
         response = openai.ChatCompletion.create(
-            model=demosigma,
+            model=barato,
             messages=[
-            {"role": "system", "content": "You are an AI assistant specialized in analyzing e-commerce transactions. Your task is to extract and detail product purchase information from the provided HTML content. For each product, include the product name, quantity, and price. Ensure the extracted information is sufficiently detailed to accurately calculate the total checkout cost, even if the response is somewhat longer. Additionally, include the website where the purchase was made."},
-            {"role": "user", "content": f"Website URL: {web_url}\nHTML Content: {body}\n\nPlease extract the product purchase details with enough granularity to allow an accurate computation of the total checkout price. The result must be a legible paragraph with only relevant information and should not contain any asterisks."}
+            {"role": "system", "content": "You are an AI assistant specialized in analyzing e-commerce transactions. Your task is to extract and detail product purchase information from the provided HTML content and generate two versions of the description. The first version, 'description_larga', should include detailed extraction such as product name, quantity, price, and the website where the purchase was made, with enough granularity to accurately compute the total checkout cost. The second version, 'description_clean', should be a concise, human-readable summary of 'description_larga' containing only the relevant information without unnecessary details. Return the output as a JSON object with exactly these two keys: 'description_larga' and 'description_clean'."},
+            {"role": "user", "content": f"Website URL: {web_url}\nHTML Content: {body}\n\nPlease extract the product purchase details accordingly."}
             ],
             temperature=0.2,
             max_tokens=2000,
         )
 
-        description = response["choices"][0]["message"]["content"]
-        print("Generated Description:", description)
-        return {"description": description}
+        description_json = response["choices"][0]["message"]["content"]
+        
+        # Clean any markdown formatting from the JSON string
+        cleaned_json = description_json
+        
+        # Remove markdown code block formatting if present
+        if cleaned_json.startswith("```"):
+            lines = cleaned_json.split("\n")
+            # Find where the actual JSON begins (after ```json or similar)
+            start_idx = 1  # Default to second line if first line has ```
+            for i, line in enumerate(lines):
+                if line.startswith("```"):
+                    start_idx = i + 1
+                    break
+            
+            # Find where the JSON ends (before trailing ```)
+            end_idx = len(lines)
+            for i in range(len(lines) - 1, start_idx, -1):
+                if lines[i].strip() == "```":
+                    end_idx = i
+                    break
+            
+            # Extract only the JSON portion
+            cleaned_json = "\n".join(lines[start_idx:end_idx])
+        
+        print("Generated Description JSON (cleaned):", cleaned_json)
+        
+        # Validate that the cleaned JSON is valid
+        try:
+            json.loads(cleaned_json)
+        except json.JSONDecodeError as e:
+            print(f"Warning: Cleaned JSON is still invalid: {str(e)}")
+            # If cleaning didn't work, return a structured JSON as fallback
+            cleaned_json = json.dumps({
+                "description_larga": "Failed to parse JSON from API response",
+                "description_clean": "Error in description processing"
+            })
+            
+        return {"description_json": cleaned_json}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ocurrió un error: {str(e)}")
@@ -364,9 +400,21 @@ async def recommend_and_categorize(transactions: list, purchase_description: str
     
     Args:
         transactions: Lista de transacciones del usuario
-        purchase_description: Descripción de la compra potencial
+        purchase_description: Descripción de la compra potencial (JSON string con description_larga y description_clean)
         user_goals: Lista de objetivos financieros del usuario (opcional)
     """
+    # Extraer la descripción larga del JSON si es posible
+    try:
+        # Intentar parsear el JSON para obtener description_larga
+        description_data = json.loads(purchase_description)
+        if isinstance(description_data, dict) and "description_larga" in description_data:
+            detailed_description = description_data["description_larga"]
+        else:
+            detailed_description = purchase_description
+    except json.JSONDecodeError:
+        # Si no es un JSON válido, usar la descripción tal cual
+        detailed_description = purchase_description
+    
     # Mensaje de sistema para orientar al LLM
     system_message = """You are an AI assistant specialized in personal finance advice. Your task is to generate a recommendation about a potential purchase and categorize this purchase into one of three categories: 'compulsive purchase', 'adequate purchase', or 'neutral purchase'. 
 
@@ -384,7 +432,7 @@ Return the output as a JSON object with two fields: 'recommendation' (a string w
     I notice you're considering a significant electronics purchase - an iPhone 16 Pro Max at €1,299 - during late night hours. This contradicts your stated goal of "paying off student loans by December". This purchase represents a substantial portion of your monthly income, and I see you recently purchased phone accessories, which suggests you may already have a functioning phone. Consider waiting until morning to finalize this high-value purchase and reflecting on whether this aligns with your goal of "limiting discretionary spending to €200/month". Decisions made during normal waking hours tend to be more aligned with long-term financial objectives. (compulsive purchase)"""
     # Mensaje de usuario con descripción, transacciones y objetivos
     user_message = (
-        f"Purchase Description: {purchase_description}\n"
+        f"Purchase Description: {detailed_description}\n"
         f"User Transactions: {json.dumps(transactions, ensure_ascii=False)}"
     )
     
