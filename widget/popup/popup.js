@@ -215,6 +215,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       fraudStatusMessage.innerHTML = "Loading fraud guard status...";
       fraudIconContainer.textContent = "🔄";
       
+      // Get purchase recommendation elements
+      const purchaseRecommendation = document.getElementById("purchase-recommendation");
+      const recommendationContent = document.getElementById("recommendation-content");
+      
       // Get the current URL to display appropriate fraud check results
       return new Promise((resolve) => {
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
@@ -236,6 +240,18 @@ document.addEventListener("DOMContentLoaded", async () => {
                 // URL-specific result found and is recent (less than 5 minutes old)
                 fraudStatusMessage.innerHTML = urlSpecificCheck.message || "No fraud status available";
                 fraudIconContainer.textContent = urlSpecificCheck.icon || "🛡️";
+                
+                // Show purchase recommendation based on fraud check result
+                purchaseRecommendation.style.display = "block";
+                if (urlSpecificCheck.isFraudulent) {
+                  recommendationContent.style.backgroundColor = "#ffebee";
+                  recommendationContent.style.color = "#d32f2f";
+                  recommendationContent.innerHTML = `<strong>PURCHASE NOT RECOMMENDED</strong><br>This site has been flagged as potentially unsafe. We recommend you avoid making a purchase here.`;
+                } else {
+                  recommendationContent.style.backgroundColor = "#e8f5e9";
+                  recommendationContent.style.color = "#2e7d32";
+                  recommendationContent.innerHTML = `<strong>SAFE TO PURCHASE</strong><br>This site appears to be legitimate. You can proceed with your purchase.`;
+                }
                 
                 // Store the result in a data attribute for tab switching
                 fraudStatusMessage.dataset.lastResult = JSON.stringify(urlSpecificCheck);
@@ -261,6 +277,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 fraudStatusMessage.innerHTML = result.message;
                 fraudIconContainer.textContent = result.icon;
                 fraudStatusMessage.dataset.lastResult = JSON.stringify(result);
+                
+                // Hide purchase recommendation since we don't have data for this URL
+                purchaseRecommendation.style.display = "none";
                 
                 // Check if current page is a cart page
                 const currentUrlLower = currentUrl.toLowerCase();
@@ -297,6 +316,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 fraudIconContainer.textContent = result.icon;
                 fraudStatusMessage.dataset.lastResult = JSON.stringify(result);
                 
+                // Hide purchase recommendation since we don't have data
+                purchaseRecommendation.style.display = "none";
+                
                 // Check if current page is a cart page
                 const currentUrlLower = currentUrl.toLowerCase();
                 const isCartPage = currentUrlLower.includes('/cart') || 
@@ -332,6 +354,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             fraudIconContainer.textContent = result.icon;
             fraudStatusMessage.dataset.lastResult = JSON.stringify(result);
             
+            // Hide purchase recommendation since we don't have data
+            purchaseRecommendation.style.display = "none";
+            
             resolve(result);
           }
         });
@@ -348,6 +373,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       
       fraudStatusMessage.innerHTML = result.message;
       fraudIconContainer.textContent = result.icon;
+      
+      // Hide purchase recommendation on error
+      document.getElementById("purchase-recommendation").style.display = "none";
       
       return result;
     }
