@@ -156,25 +156,32 @@ function showNotification(message, isWarning = false) {
 
 // Helper function to create expandable recommendation notifications
 function showExpandableRecommendation(recommendation, category) {
-  // Determine color based on exact category names
+  // Determine color based on category content (more inclusive matching)
   let categoryColor = '#757575'; // Default gray for neutral or unknown categories
   let categoryIcon = '🔍'; // Default icon
   let isWarning = false;
   
   // Normalize category by trimming and converting to lowercase
-  const normalizedCategory = category.toLowerCase().trim();
+  const normalizedCategory = (category || '').toLowerCase().trim();
   
-  if (normalizedCategory === 'compulsive purchase') {
+  // Check for compulsive purchase with more flexible matching
+  if (normalizedCategory.includes('compulsive') || normalizedCategory.includes('compulsiva')) {
     categoryColor = '#f44336'; // Red for compulsive
     categoryIcon = '⚠️';
     isWarning = true; // Mark as warning for compulsive purchases
-  } else if (normalizedCategory === 'adequate purchase') {
-    categoryColor = '#4caf50'; // Green for correct/adequate
+  } 
+  // Check for adequate purchase with more flexible matching
+  else if (normalizedCategory.includes('adequate') || normalizedCategory.includes('adecuada')) {
+    categoryColor = '#4caf50'; // Green for adequate
     categoryIcon = '✅';
-  } else if (normalizedCategory === 'neutral purchase') {
+  } 
+  // Check for neutral purchase with more flexible matching
+  else if (normalizedCategory.includes('neutral')) {
     categoryColor = '#757575'; // Gray for neutral
     categoryIcon = '🔍';
   }
+  
+  console.log(`Categoría detectada: "${normalizedCategory}" - Color: ${categoryColor} - Icono: ${categoryIcon}`);
   
   // Create notification element with the appropriate color directly
   const notification = showNotification(`${categoryIcon} ${recommendation.substring(0, 50)}${recommendation.length > 50 ? '...' : ''}`, isWarning);
