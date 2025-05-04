@@ -276,12 +276,18 @@ function sendHtmlBodyToServer(htmlBody) {
     progress.update(progressValue);
   }, 300);
   
+  // Get current URL
+  const currentUrl = window.location.href;
+  
   fetch('http://127.0.0.1:8000/generate-description', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ body: htmlBody })
+    body: JSON.stringify({ 
+      body: htmlBody,
+      url: currentUrl
+    })
   })
     .then(response => response.json())
     .then(data => {
