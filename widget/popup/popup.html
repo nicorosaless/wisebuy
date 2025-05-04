@@ -442,6 +442,12 @@
             <div id="fraud-status-message" style="text-align: center; font-size: 16px; margin-bottom: 20px;">
               Checking shopping cart status...
             </div>
+            <div id="purchase-recommendation" style="text-align: center; margin: 20px 0; display: none;">
+              <h3 style="margin-bottom: 10px; color: #333;">Purchase Recommendation</h3>
+              <div id="recommendation-content" style="padding: 15px; border-radius: 8px; font-weight: 500;">
+                No recommendation available yet.
+              </div>
+            </div>
             <div id="fraud-status-details" style="background-color: #f5f7fa; border-radius: 12px; padding: 15px; margin-top: 15px;">
               <p>The Fraud Guard will monitor your shopping activities and alert you when a potentially unsafe transaction is detected.</p>
               <p>For enhanced security:</p>
@@ -609,6 +615,20 @@
         })
         .catch(error => {
           console.error("Error fetching user data:", error);
+        });
+
+      // Fetch and display purchase recommendation dynamically
+      const recommendationContent = document.getElementById("recommendation-content");
+      const purchaseRecommendation = document.getElementById("purchase-recommendation");
+      fetch("/api/recommendation")
+        .then(response => response.json())
+        .then(recommendation => {
+          purchaseRecommendation.style.display = "block";
+          recommendationContent.textContent = recommendation.message;
+        })
+        .catch(error => {
+          console.error("Error fetching recommendation:", error);
+          recommendationContent.textContent = "Failed to load recommendation.";
         });
     });
   </script>
