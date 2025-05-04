@@ -1,7 +1,9 @@
 # WiseBuy
 
 Developed for HackUPC 2025
+
 DevPost submission: https://devpost.com/software/wisebuy-hdinj7
+
 Preview YouTube Video: https://youtu.be/ydEnkvGfKkQ
 
 ## Overview
