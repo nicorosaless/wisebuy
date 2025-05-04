@@ -108,6 +108,34 @@ async function getUserName() {
     }
 }
 
+// Function to get user's subscriptions
+async function getUserSubscriptions() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+        return [];
+    }
+    
+    try {
+        const response = await fetch("http://localhost:8000/get-user-subscriptions", {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            console.error("Error fetching subscriptions:", response.statusText);
+            return [];
+        }
+        
+        const data = await response.json();
+        return data.subscriptions || [];
+    } catch (error) {
+        console.error("Error getting user subscriptions:", error);
+        return [];
+    }
+}
+
 // Function to get the user's goals from MongoDB
 async function getUserGoals() {
     const token = localStorage.getItem("token");
