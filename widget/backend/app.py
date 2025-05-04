@@ -173,6 +173,29 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
 
+@app.get("/get-user-info")
+async def get_user_info(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    try:
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if "email" in decoded_token:
+            user = users_collection.find_one({"email": decoded_token["email"]})
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            # Convert ObjectId to string for JSON serialization
+            if '_id' in user:
+                user['_id'] = str(user['_id'])
+                
+            return {
+                "email": user.get("email", ""),
+                "name": user.get("name", "User"),
+                # Add other user fields as needed
+            }
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
 @app.get("/get-user-goals")
 async def get_user_goals(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials

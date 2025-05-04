@@ -81,6 +81,33 @@ async function getCurrentUserEmail() {
     }
 }
 
+// Function to get the user's name from MongoDB
+async function getUserName() {
+    const token = localStorage.getItem("token");
+    if (!token) {
+        return "User";
+    }
+    
+    try {
+        const response = await fetch("http://localhost:8000/get-user-info", {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            return "User";
+        }
+        
+        const data = await response.json();
+        return data.name || "User";
+    } catch (error) {
+        console.error("Error getting user name:", error);
+        return "User";
+    }
+}
+
 // Function to get the user's goals from MongoDB
 async function getUserGoals() {
     const token = localStorage.getItem("token");

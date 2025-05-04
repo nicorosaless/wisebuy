@@ -379,7 +379,7 @@
   
   <div id="widget" style="display: none;">
     <div class="app-header">
-      <h1>User</h1>
+      <h1 id="welcome-header">Welcome, User</h1>
       <div class="header-controls">
         <div class="settings-icon" id="toggle-settings">⚙️</div>
         <div class="close-icon">×</div>
@@ -405,12 +405,6 @@
         </div>
         <div class="sidebar-icon" data-section="accounts">
           <span>🎯</span>
-        </div>
-        <div class="sidebar-icon" data-section="payments">
-          <span>💸</span>
-        </div>
-        <div class="sidebar-icon" data-section="cards">
-          <span>💳</span>
         </div>
       </div>
       
@@ -462,16 +456,6 @@
         <div id="accounts">
           <h2 class="section-title">Goal Impact</h2>
           <p>This could delay your trip to Japan by 12 days</p>
-        </div>
-        
-        <div id="payments">
-          <h2 class="section-title">Payments</h2>
-          <p>Payment options and history would appear here.</p>
-        </div>
-        
-        <div id="cards">
-          <h2 class="section-title">Your Cards</h2>
-          <p>Card management options would appear here.</p>
         </div>
       </div>
     </div>
@@ -618,6 +602,17 @@
         .catch(error => {
           console.error("Error fetching goals:", error);
           goalsContainer.innerHTML = "<div class='error-loading-goals'>Failed to load goals.</div>";
+        });
+
+      // Fetch and display user's name dynamically
+      fetch("/api/user")
+        .then(response => response.json())
+        .then(user => {
+          const welcomeHeader = document.getElementById("welcome-header");
+          welcomeHeader.textContent = `Welcome, ${user.name}`;
+        })
+        .catch(error => {
+          console.error("Error fetching user data:", error);
         });
     });
   </script>

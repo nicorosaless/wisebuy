@@ -3,6 +3,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   const widgetContent = document.getElementById("widget");
   const userInfoElement = document.getElementById("user-info");
   const goalsContainer = document.getElementById("goals-container");
+  const welcomeHeader = document.getElementById("welcome-header");
+
+  // Function to display the user's name in welcome header
+  async function displayUserName() {
+    try {
+      const userName = await getUserName();
+      if (welcomeHeader) {
+        welcomeHeader.textContent = `Welcome, ${userName}`;
+      }
+    } catch (error) {
+      console.error("Error fetching user name:", error);
+      // Fall back to default if there's an error
+      if (welcomeHeader) {
+        welcomeHeader.textContent = "Welcome, User";
+      }
+    }
+  }
 
   // Function to display the user's email
   async function displayUserInfo() {
@@ -74,6 +91,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     loginForm.style.display = "none";
     widgetContent.style.display = "block";
     
+    // Display the user's name in welcome header
+    displayUserName();
+
     // Display the user's email
     displayUserInfo();
     
@@ -96,6 +116,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       loginForm.style.display = "none";
       widgetContent.style.display = "block";
       
+      // Display the user's name in welcome header after login
+      displayUserName();
+
       // Display the user's email after login
       displayUserInfo();
       
