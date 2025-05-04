@@ -104,21 +104,22 @@ To extend the extension with new features:
 3. Popup UI: Modify `popup.html` and `popup.js` to display new information
 
 ## Screenshots and Examples
+### Login
+![Login View](screenshots/login.png)
 
 ### Dashboard View
-![Dashboard View](screenshots/dashboard.png)
+![Dashboard View](screenshots/goals.png)
 *The main dashboard shows your financial goals progress and recent activity*
 
 ### Fraud Detection
-![Fraud Detection](screenshots/fraud-detection.png)
+![Fraud Detection](screenshots/nocheck.png)
 *The extension alerts you when a potentially fraudulent website is detected*
 
-### Shopping Analysis
-![Shopping Analysis](screenshots/shopping-analysis.png)
-*Get insights about your purchases and their impact on your financial goals*
+![Fraud Detection2](screenshots/safe.png)
+*The extension alerts you when a potentially fraudulent website is detected*
 
 ### Subscription Management
-![Subscription Management](screenshots/subscription-management.png)
+![Subscription Management](screenshots/Compulsive.png)
 *See all your active subscriptions and get recommendations for unused services*
 
 ### Example Use Cases
