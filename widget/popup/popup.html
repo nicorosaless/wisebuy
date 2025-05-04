@@ -379,7 +379,7 @@
   
   <div id="widget" style="display: none;">
     <div class="app-header">
-      <h1>User</h1>
+      <h1 id="welcome-header">Welcome, User</h1>
       <div class="header-controls">
         <div class="settings-icon" id="toggle-settings">⚙️</div>
         <div class="close-icon">×</div>
@@ -406,11 +406,8 @@
         <div class="sidebar-icon" data-section="accounts">
           <span>🎯</span>
         </div>
-        <div class="sidebar-icon" data-section="payments">
-          <span>💸</span>
-        </div>
-        <div class="sidebar-icon" data-section="cards">
-          <span>💳</span>
+        <div class="sidebar-icon" data-section="fraudguard">
+          <span>🛡️</span>
         </div>
       </div>
       
@@ -424,39 +421,11 @@
         </div>
         
         <div id="alerts">
-          <div class="alert-item subscription-alert">
-            <div class="alert-icon subscription-icon">
-              <span>💳</span>
-            </div>
-            <div class="alert-content">
-              <h3>Subscription Detector</h3>
-              <p>You're paying for Netflix but haven't used it recently. Cancel subscription?</p>
-            </div>
+          <h2 class="section-title">Subscription Reminders</h2>
+          <div id="subscription-alerts">
+            <!-- Subscription alerts will be populated dynamically -->
+            <div class="loading-subscriptions">Loading subscriptions...</div>
           </div>
-          
-          <div class="alert-item fraud-alert">
-            <div class="alert-icon fraud-icon">
-              <span>⚠️</span>
-            </div>
-            <div class="alert-content">
-              <h3>Fraud Detection</h3>
-              <p>This purchase shows signs of potential fraud</p>
-              <div class="alert-tag">Alert</div>
-            </div>
-          </div>
-          
-          <div class="alert-item shopping-alert">
-            <div class="alert-icon shopping-icon">
-              <span>🛍️</span>
-            </div>
-            <div class="alert-content">
-              <h3>Compulsive Shopping</h3>
-              <p>High spending in a short period detected</p>
-              <div class="alert-tag caution-tag">Caution</div>
-            </div>
-          </div>
-          
-          
         </div>
         
         <div id="accounts">
@@ -464,14 +433,25 @@
           <p>This could delay your trip to Japan by 12 days</p>
         </div>
         
-        <div id="payments">
-          <h2 class="section-title">Payments</h2>
-          <p>Payment options and history would appear here.</p>
-        </div>
-        
-        <div id="cards">
-          <h2 class="section-title">Your Cards</h2>
-          <p>Card management options would appear here.</p>
+        <div id="fraudguard" style="display: none; padding: 15px 20px;">
+          <h2 class="section-title">Fraud Guard</h2>
+          <div class="fraud-guard-status" id="fraud-guard-status">
+            <div class="fraud-icon-container" style="text-align: center; margin: 20px 0;">
+              <div class="shield-icon" style="font-size: 48px; margin-bottom: 15px;">🛡️</div>
+            </div>
+            <div id="fraud-status-message" style="text-align: center; font-size: 16px; margin-bottom: 20px;">
+              Checking shopping cart status...
+            </div>
+            <div id="fraud-status-details" style="background-color: #f5f7fa; border-radius: 12px; padding: 15px; margin-top: 15px;">
+              <p>The Fraud Guard will monitor your shopping activities and alert you when a potentially unsafe transaction is detected.</p>
+              <p>For enhanced security:</p>
+              <ul style="margin-top: 10px; padding-left: 20px;">
+                <li>Always verify the website URL before making a purchase</li>
+                <li>Check for secure connection (https) in the address bar</li>
+                <li>Use virtual cards for online purchases when possible</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -539,7 +519,7 @@
           this.classList.add('active');
           
           // Hide all sections
-          const allSections = document.querySelectorAll('#home, #alerts, #accounts, #payments, #cards');
+          const allSections = document.querySelectorAll('#home, #alerts, #accounts, #payments, #cards, #fraudguard');
           allSections.forEach(section => {
             section.style.display = 'none';
           });
@@ -618,6 +598,17 @@
         .catch(error => {
           console.error("Error fetching goals:", error);
           goalsContainer.innerHTML = "<div class='error-loading-goals'>Failed to load goals.</div>";
+        });
+
+      // Fetch and display user's name dynamically
+      fetch("/api/user")
+        .then(response => response.json())
+        .then(user => {
+          const welcomeHeader = document.getElementById("welcome-header");
+          welcomeHeader.textContent = `Welcome, ${user.name}`;
+        })
+        .catch(error => {
+          console.error("Error fetching user data:", error);
         });
     });
   </script>

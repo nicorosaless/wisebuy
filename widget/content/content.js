@@ -220,6 +220,26 @@ function checkFraud(url) {
   const notification = showNotification('Checking for fraud...', false);
   const spinner = addLoadingSpinner(notification);
   
+  // Create a URL-safe key for storage
+  const urlKey = encodeURIComponent(url);
+  
+  // Store URL and checking state in chrome.storage
+  chrome.storage.local.set({
+    'currentUrl': url,
+    'lastCheckedUrl': url,
+    [`fraudCheck_${urlKey}`]: {
+      url: url,
+      status: 'checking',
+      timestamp: new Date().getTime()
+    },
+    // Also store a reference to the currently checked URL
+    'lastFraudCheck': {
+      url: url,
+      status: 'checking',
+      timestamp: new Date().getTime()
+    }
+  });
+  
   fetch('http://127.0.0.1:8000/check-fraud', {
     method: 'POST',
     headers: {
@@ -232,13 +252,38 @@ function checkFraud(url) {
       // Remove spinner when complete
       spinner.remove();
       
+      // Format URL for display
+      const displayUrl = new URL(url).hostname;
+      
+      // Create result object
+      const resultObject = {
+        url: url,
+        displayUrl: displayUrl,
+        status: 'complete',
+        isFraudulent: data.isFraudulent,
+        stats: data.stats || {},
+        timestamp: new Date().getTime(),
+        message: data.isFraudulent ? 
+          `<span style="color: #f44336; font-weight: bold; font-size: 18px;">SHOPPING CART IS NOT SAFE</span><br><br><span style="font-weight: bold;">URL:</span> ${displayUrl}<br><br>This website has been flagged for potential fraud. We recommend you do not proceed with your purchase.` : 
+          `<span style="color: #4caf50; font-weight: bold; font-size: 18px;">SHOPPING CART SAFE</span><br><br><span style="font-weight: bold;">URL:</span> ${displayUrl}<br><br>This shopping cart has passed our security checks. You may proceed with your purchase.`,
+        icon: data.isFraudulent ? '⚠️' : '✅'
+      };
+      
+      // Store results in chrome.storage for the popup with URL-specific key
+      chrome.storage.local.set({
+        [`fraudCheck_${urlKey}`]: resultObject,
+        // Update the last check reference
+        'lastFraudCheck': resultObject,
+        'lastCheckedUrl': url
+      });
+      
       // Update notification with results
       if (data.isFraudulent) {
         notification.setColor('#f44336'); // Red for warning
-        notification.update('Fraud detected on this page! Proceed with caution.');
+        notification.update(`Fraud detected on ${displayUrl}! Proceed with caution.`);
       } else {
         notification.setColor('#4caf50'); // Green for safe
-        notification.update('No fraud detected on this page.');
+        notification.update(`No fraud detected on ${displayUrl}.`);
       }
       
       // Close notification after delay
@@ -249,10 +294,30 @@ function checkFraud(url) {
     .catch(error => {
       console.error('Error during fraud detection:', error);
       
+      // Format URL for display
+      const displayUrl = new URL(url).hostname;
+      
+      // Store error in chrome.storage
+      const errorObject = {
+        url: url,
+        displayUrl: displayUrl,
+        status: 'error',
+        error: error.message,
+        timestamp: new Date().getTime(),
+        message: `<span style="color: #ff9800; font-weight: bold; font-size: 18px;">ERROR CHECKING SAFETY</span><br><br><span style="font-weight: bold;">URL:</span> ${displayUrl}<br><br>Unable to check shopping cart safety at this time. Please try again later.`,
+        icon: "❓"
+      };
+      
+      chrome.storage.local.set({
+        [`fraudCheck_${urlKey}`]: errorObject,
+        'lastFraudCheck': errorObject,
+        'lastCheckedUrl': url
+      });
+      
       // Remove spinner and show error
       spinner.remove();
       notification.setColor('#ff9800'); // Orange for error
-      notification.update('Error checking fraud: ' + error.message);
+      notification.update(`Error checking fraud for ${displayUrl}: ${error.message}`);
       
       // Close notification after delay
       setTimeout(() => {
