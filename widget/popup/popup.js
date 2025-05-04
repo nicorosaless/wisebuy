@@ -680,7 +680,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Bank website link
   document.getElementById("bank-website").addEventListener("click", () => {
-    window.open("https://yourbankwebsite.com", "_blank");
+    window.open("https://revolut.com", "_blank");
   });
 
   // Sidebar navigation logic (unified)
