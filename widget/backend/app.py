@@ -101,7 +101,7 @@ async def generate_description(data: HTMLBody):
             model=demosigma,
             messages=[
             {"role": "system", "content": "You are an AI assistant specialized in analyzing e-commerce transactions. Your task is to extract and detail product purchase information from the provided HTML content. For each product, include the product name, quantity, and price. Ensure the extracted information is sufficiently detailed to accurately calculate the total checkout cost, even if the response is somewhat longer. Additionally, include the website where the purchase was made."},
-            {"role": "user", "content": f"Website URL: {web_url}\nHTML Content: {body}\n\nPlease extract the product purchase details with enough granularity to allow an accurate computation of the total checkout price."}
+            {"role": "user", "content": f"Website URL: {web_url}\nHTML Content: {body}\n\nPlease extract the product purchase details with enough granularity to allow an accurate computation of the total checkout price. The result must be a legible paragraph with only relevant information and should not contain any asterisks."}
             ],
             temperature=0.2,
             max_tokens=2000,
