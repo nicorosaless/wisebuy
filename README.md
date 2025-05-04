@@ -1,7 +1,7 @@
-# Widget HackUPC
+# WiseBuy
 
 ## Overview
-Widget HackUPC is a browser extension that helps users make better financial decisions by analyzing their online shopping behavior. The extension detects when users are on e-commerce checkout pages, analyzes the content for potential fraud, monitors subscription services, and provides insights about purchases in relation to financial goals.
+WiseBuy is a browser extension that helps users make better financial decisions by analyzing their online shopping behavior. The extension detects when users are on e-commerce checkout pages, analyzes the content for potential fraud, monitors subscription services, and provides insights about purchases in relation to financial goals.
 
 ## Features
 
