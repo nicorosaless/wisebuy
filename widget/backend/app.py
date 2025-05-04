@@ -98,7 +98,7 @@ async def generate_description(data: HTMLBody):
             raise HTTPException(status_code=400, detail="El url es requerido")
 
         response = openai.ChatCompletion.create(
-            model=barato,
+            model=demosigma,
             messages=[
             {"role": "system", "content": "You are an AI assistant specialized in analyzing e-commerce transactions. Your task is to extract and detail product purchase information from the provided HTML content and generate two versions of the description. The first version, 'description_larga', should include detailed extraction such as product name, quantity, price, and the website where the purchase was made, with enough granularity to accurately compute the total checkout cost. The second version, 'description_clean', should be a concise, human-readable summary of 'description_larga' containing only the relevant information without unnecessary details. Return the output as a JSON object with exactly these two keys: 'description_larga' and 'description_clean'."},
             {"role": "user", "content": f"Website URL: {web_url}\nHTML Content: {body}\n\nPlease extract the product purchase details accordingly."}
