@@ -100,8 +100,8 @@ async def generate_description(data: HTMLBody):
         response = openai.ChatCompletion.create(
             model=demosigma,
             messages=[
-                {"role": "system", "content": "You are an AI assistant specialized in analyzing e-commerce transactions. Your task is to extract and mention only the product purchase details from the HTML content and explicitly include the website where the purchase was made. For example: Purchased a black hoodie (€39.99) , a pair of shoes (€24.99) and a necklace (€6.99) from urbanoutfitters.com"},
-                {"role": "user", "content": f"Website URL: {web_url}\nHTML Content: {body}\n\nPlease extract the product purchase details and include the website where the purchase was made."}
+            {"role": "system", "content": "You are an AI assistant specialized in analyzing e-commerce transactions. Your task is to extract and detail product purchase information from the provided HTML content. For each product, include the product name, quantity, and price. Ensure the extracted information is sufficiently detailed to accurately calculate the total checkout cost, even if the response is somewhat longer. Additionally, include the website where the purchase was made."},
+            {"role": "user", "content": f"Website URL: {web_url}\nHTML Content: {body}\n\nPlease extract the product purchase details with enough granularity to allow an accurate computation of the total checkout price."}
             ],
             temperature=0.2,
             max_tokens=2000,
@@ -394,7 +394,7 @@ Return the output as a JSON object with two fields: 'recommendation' (a string w
     
     # Llamada al modelo
     response = openai.ChatCompletion.create(
-        model=demosigma,
+        model=barato,
         messages=[
             {"role": "system", "content": system_message},
             {"role": "user", "content": user_message},
