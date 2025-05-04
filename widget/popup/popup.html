@@ -366,6 +366,103 @@
     padding: 15px 20px;
     display: none;
   }
+
+  /* Recommendation Section */
+  .recommendation-item {
+    background-color: #f5f7fa;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .recommendation-item.compulsive {
+    border-left: 4px solid #f44336;
+  }
+  
+  .recommendation-item.correct {
+    border-left: 4px solid #4caf50;
+  }
+  
+  .recommendation-item.neutral {
+    border-left: 4px solid #757575;
+  }
+  
+  .recommendation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .recommendation-icon {
+    margin-right: 10px;
+    font-size: 18px;
+  }
+  
+  .recommendation-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: #333;
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .recommendation-date {
+    font-size: 12px;
+    color: #777;
+    white-space: nowrap;
+  }
+  
+  .recommendation-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.5;
+  }
+  
+  .recommendation-item.expanded .recommendation-content {
+    max-height: 200px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0,0,0,0.05);
+  }
+  
+  .recommendation-category {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 8px;
+  }
+  
+  .category-compulsive {
+    background-color: #ffebee;
+    color: #d32f2f;
+  }
+  
+  .category-correct {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+  
+  .category-neutral {
+    background-color: #f5f5f5;
+    color: #616161;
+  }
+  
+  .no-recommendations {
+    padding: 20px;
+    text-align: center;
+    color: #777;
+    font-style: italic;
+  }
 </style>
 <body>
   <div id="login-form" style="display: block;">
@@ -391,7 +488,6 @@
       <label><input type="checkbox" id="fraud-popup" checked> Show Fraud Alerts</label><br>
       <label><input type="checkbox" id="compulsive-popup" checked> Show Compulsive Purchase Alerts</label><br>
       <label><input type="checkbox" id="subscription-popup" checked> Show Subscription Reminders</label><br>
-      <label><input type="checkbox" id="goal-popup" checked> Show Goal Impact Alerts</label><br>
       <button id="back-from-settings" style="margin-top: 15px; padding: 8px 15px; background: #0666eb; color: white; border: none; border-radius: 6px; cursor: pointer;">Back</button>
     </div>
     
@@ -403,8 +499,8 @@
         <div class="sidebar-icon" data-section="alerts">
           <span>🔔</span>
         </div>
-        <div class="sidebar-icon" data-section="accounts">
-          <span>🎯</span>
+        <div class="sidebar-icon" data-section="recommendations">
+          <span>💡</span>
         </div>
         <div class="sidebar-icon" data-section="fraudguard">
           <span>🛡️</span>
@@ -428,9 +524,12 @@
           </div>
         </div>
         
-        <div id="accounts">
-          <h2 class="section-title">Goal Impact</h2>
-          <p>This could delay your trip to Japan by 12 days</p>
+        <div id="recommendations" style="display: none; padding: 15px 20px;">
+          <h2 class="section-title">Purchase Recommendations</h2>
+          <div id="recommendations-container">
+            <!-- Recommendations will be populated dynamically -->
+            <div class="loading-recommendations">Loading recommendations...</div>
+          </div>
         </div>
         
         <div id="fraudguard" style="display: none; padding: 15px 20px;">
@@ -525,7 +624,7 @@
           this.classList.add('active');
           
           // Hide all sections
-          const allSections = document.querySelectorAll('#home, #alerts, #accounts, #payments, #cards, #fraudguard');
+          const allSections = document.querySelectorAll('#home, #alerts, #recommendations, #accounts, #payments, #cards, #fraudguard');
           allSections.forEach(section => {
             section.style.display = 'none';
           });
@@ -630,11 +729,42 @@
           console.error("Error fetching recommendation:", error);
           recommendationContent.textContent = "Failed to load recommendation.";
         });
+
+      // Fetch and display recommendations dynamically
+      const recommendationsContainer = document.getElementById("recommendations-container");
+      fetch("/api/recommendations")
+        .then(response => response.json())
+        .then(recommendations => {
+          recommendationsContainer.innerHTML = ""; // Clear loading message
+          if (recommendations.length === 0) {
+            recommendationsContainer.innerHTML = "<div class='no-recommendations'>No recommendations available.</div>";
+          } else {
+            recommendations.forEach(recommendation => {
+              const recommendationItem = document.createElement("div");
+              recommendationItem.className = `recommendation-item ${recommendation.type}`;
+              recommendationItem.innerHTML = `
+                <div class="recommendation-header">
+                  <div class="recommendation-icon">${recommendation.icon}</div>
+                  <div class="recommendation-title">${recommendation.title}</div>
+                  <div class="recommendation-date">${recommendation.date}</div>
+                </div>
+                <div class="recommendation-content">${recommendation.content}</div>
+                <div class="recommendation-category category-${recommendation.type}">${recommendation.category}</div>
+              `;
+              recommendationItem.addEventListener("click", () => {
+                recommendationItem.classList.toggle("expanded");
+              });
+              recommendationsContainer.appendChild(recommendationItem);
+            });
+          }
+        })
+        .catch(error => {
+          console.error("Error fetching recommendations:", error);
+          recommendationsContainer.innerHTML = "<div class='error-loading-recommendations'>Failed to load recommendations.</div>";
+        });
     });
   </script>
   <script src="../api.js"></script>
   <script src="popup.js"></script>
-  
-  
 </body>
 </html>

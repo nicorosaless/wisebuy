@@ -89,9 +89,189 @@ const NotificationManager = {
   }
 };
 
+// RecommendationStorage system to store and manage recommendation history
+const RecommendationStorage = {
+  recommendations: [],
+  maxRecommendations: 50, // Maximum number of recommendations to store
+  
+  // Add a new recommendation to storage
+  add(recommendation) {
+    // Format recommendation with timestamp if not already present
+    const formattedRecommendation = {
+      ...recommendation,
+      timestamp: recommendation.timestamp || new Date().getTime(),
+      id: recommendation.id || Date.now() + Math.random().toString(36).substring(2, 9)
+    };
+    
+    // Add to beginning of array (newest first)
+    this.recommendations.unshift(formattedRecommendation);
+    
+    // Trim array if it exceeds maximum length
+    if (this.recommendations.length > this.maxRecommendations) {
+      this.recommendations.pop();
+    }
+    
+    // Save to chrome.storage
+    chrome.storage.local.set({ 'storedRecommendations': this.recommendations });
+    
+    return formattedRecommendation;
+  },
+  
+  // Load recommendations from storage
+  load(callback) {
+    chrome.storage.local.get(['storedRecommendations'], (result) => {
+      if (result.storedRecommendations) {
+        this.recommendations = result.storedRecommendations;
+      }
+      if (callback && typeof callback === 'function') {
+        callback(this.recommendations);
+      }
+    });
+  },
+  
+  // Clear all recommendations
+  clear() {
+    this.recommendations = [];
+    chrome.storage.local.remove('storedRecommendations');
+  },
+  
+  // Get all recommendations
+  getAll() {
+    return this.recommendations;
+  },
+  
+  // Get recommendation by ID
+  getById(id) {
+    return this.recommendations.find(r => r.id === id);
+  }
+};
+
+// Load stored recommendations when script initializes
+RecommendationStorage.load();
+
 // Helper function to show non-blocking notifications
 function showNotification(message, isWarning = false) {
   return NotificationManager.show(message, isWarning);
+}
+
+// Helper function to create expandable recommendation notifications
+function showExpandableRecommendation(recommendation, category) {
+  // Determine color based on exact category names
+  let categoryColor = '#757575'; // Default gray for neutral or unknown categories
+  let categoryIcon = '🔍'; // Default icon
+  let isWarning = false;
+  
+  // Normalize category by trimming and converting to lowercase
+  const normalizedCategory = category.toLowerCase().trim();
+  
+  if (normalizedCategory === 'compulsive purchase') {
+    categoryColor = '#f44336'; // Red for compulsive
+    categoryIcon = '⚠️';
+    isWarning = true; // Mark as warning for compulsive purchases
+  } else if (normalizedCategory === 'adequate purchase') {
+    categoryColor = '#4caf50'; // Green for correct/adequate
+    categoryIcon = '✅';
+  } else if (normalizedCategory === 'neutral purchase') {
+    categoryColor = '#757575'; // Gray for neutral
+    categoryIcon = '🔍';
+  }
+  
+  // Create notification element with the appropriate color directly
+  const notification = showNotification(`${categoryIcon} ${recommendation.substring(0, 50)}${recommendation.length > 50 ? '...' : ''}`, isWarning);
+  
+  // Make sure the correct color is set regardless of warning status
+  notification.setColor(categoryColor);
+  
+  // Create expandable container for full recommendation
+  const expandableContainer = document.createElement('div');
+  expandableContainer.style.cssText = `
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    margin-top: 5px;
+  `;
+  
+  // Create full text element
+  const fullText = document.createElement('div');
+  fullText.style.cssText = `
+    padding: 10px 5px;
+    font-size: 13px;
+    line-height: 1.4;
+  `;
+  fullText.textContent = recommendation;
+  expandableContainer.appendChild(fullText);
+  
+  // Add to notification
+  notification.element.appendChild(expandableContainer);
+  
+  // Add category label
+  const categoryLabel = document.createElement('div');
+  categoryLabel.style.cssText = `
+    font-weight: bold;
+    margin-top: 8px;
+    text-align: right;
+    font-size: 12px;
+    color: ${categoryColor === '#757575' ? 'white' : 'rgba(255,255,255,0.9)'};
+  `;
+  categoryLabel.textContent = `Categoría: ${category}`;
+  notification.element.appendChild(categoryLabel);
+  
+  // Add click toggle behavior
+  let isExpanded = false;
+  notification.element.style.cursor = 'pointer';
+  notification.element.addEventListener('click', (e) => {
+    isExpanded = !isExpanded;
+    
+    if (isExpanded) {
+      expandableContainer.style.maxHeight = `${fullText.offsetHeight + 20}px`;
+    } else {
+      expandableContainer.style.maxHeight = '0';
+    }
+    
+    // Prevent click from closing the notification
+    e.stopPropagation();
+  });
+  
+  // Store the recommendation with the proper category name
+  const storedRec = RecommendationStorage.add({
+    recommendation: recommendation,
+    category: category,
+    color: categoryColor,
+    icon: categoryIcon,
+    timestamp: new Date().getTime()
+  });
+  
+  // Add a close button that won't trigger expand
+  const closeButton = document.createElement('div');
+  closeButton.textContent = '×';
+  closeButton.style.cssText = `
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  `;
+  closeButton.addEventListener('mouseover', () => {
+    closeButton.style.opacity = '1';
+  });
+  closeButton.addEventListener('mouseout', () => {
+    closeButton.style.opacity = '0.7';
+  });
+  closeButton.addEventListener('click', (e) => {
+    notification.close();
+    e.stopPropagation();
+  });
+  notification.element.appendChild(closeButton);
+  
+  return {
+    notification,
+    expandableContainer,
+    storedId: storedRec.id
+  };
 }
 
 // Helper function to add a progress bar to a notification
@@ -428,24 +608,15 @@ function sendHtmlBodyToServer(htmlBody) {
             })
             .then(res => res.json())
             .then(recData => {
-              // Crear notificación con la recomendación y categoría
-              let categoryColor = '#4caf50'; // Verde por defecto (neutral)
-              if (recData.category && recData.category.toLowerCase().includes('compulsiva')) {
-                categoryColor = '#f44336'; // Rojo para compra compulsiva
-              } else if (recData.category && recData.category.toLowerCase().includes('adecuada')) {
-                categoryColor = '#2196F3'; // Azul para compra adecuada
-              }
+              // Create expandable notification with recommendation data
+              const recommendationText = recData.recommendation || 'Sin recomendación disponible';
+              const category = recData.category || 'Neutral';
               
-              const recNotification = showNotification(`${recData.recommendation || 'Sin recomendación disponible'}`, false);
-              recNotification.setColor(categoryColor);
-              
-              // Agregar la categoría debajo si existe
-              if (recData.category) {
-                const categoryElement = document.createElement('div');
-                categoryElement.style.cssText = 'font-weight: bold; margin-top: 8px; text-align: right;';
-                categoryElement.textContent = `Categoría: ${recData.category}`;
-                recNotification.element.appendChild(categoryElement);
-              }
+              // Show expandable recommendation notification
+              const { notification: recNotification } = showExpandableRecommendation(
+                recommendationText,
+                category
+              );
               
               // Mantener visible por más tiempo por ser información importante
               setTimeout(() => {

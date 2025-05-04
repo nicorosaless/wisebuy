@@ -7,6 +7,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // New fraud guard elements
   const fraudStatusMessage = document.getElementById("fraud-status-message");
   const fraudIconContainer = document.querySelector(".fraud-icon-container .shield-icon");
+  // Recommendations container
+  const recommendationsContainer = document.getElementById("recommendations-container");
+  // Goal impact container
+  const goalImpactContainer = document.getElementById("goal-impact-container");
 
   // Function to display the user's name in welcome header
   async function displayUserName() {
@@ -77,7 +81,6 @@ document.addEventListener("DOMContentLoaded", async () => {
             <div>${progressPercentage}% complete</div>
             <div>Deadline: ${deadlineFormatted}</div>
           </div>
-          <div class="goal-impact">Impact: ${goal.impactOfCurrentSpending}</div>
         `;
         
         goalsContainer.appendChild(goalItem);
@@ -85,6 +88,158 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (error) {
       console.error("Error loading goals:", error);
       goalsContainer.innerHTML = '<div class="error-loading-goals">Failed to load goals. Please try again later.</div>';
+    }
+  }
+
+  // Function to load and display saved recommendations
+  async function loadRecommendations() {
+    try {
+      recommendationsContainer.innerHTML = '<div class="loading-recommendations">Loading recommendations...</div>';
+      
+      // Get recommendations from storage
+      chrome.storage.local.get(['storedRecommendations'], (result) => {
+        const recommendations = result.storedRecommendations || [];
+        
+        if (!recommendations || recommendations.length === 0) {
+          recommendationsContainer.innerHTML = '<div class="no-recommendations">No recommendations available yet. Recommendations will appear here after analyzing your purchases.</div>';
+          return;
+        }
+        
+        // Clear the container
+        recommendationsContainer.innerHTML = '';
+        
+        // Process and display recommendations
+        recommendations.forEach(rec => {
+          // Determine type class based on category
+          let typeClass = 'neutral';
+          if (rec.category && rec.category.toLowerCase().includes('compulsiva')) {
+            typeClass = 'compulsive';
+          } else if (rec.category && rec.category.toLowerCase().includes('adecuada')) {
+            typeClass = 'correct';
+          }
+          
+          // Format date
+          const date = new Date(rec.timestamp);
+          const dateFormatted = date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          
+          // Create recommendation summary (first 50 chars)
+          const recommendationSummary = rec.recommendation.substring(0, 50) + (rec.recommendation.length > 50 ? '...' : '');
+          
+          // Create recommendation HTML element
+          const recItem = document.createElement("div");
+          recItem.className = `recommendation-item ${typeClass}`;
+          recItem.innerHTML = `
+            <div class="recommendation-header">
+              <div class="recommendation-icon">${rec.icon || '💡'}</div>
+              <div class="recommendation-title">${recommendationSummary}</div>
+              <div class="recommendation-date">${dateFormatted}</div>
+            </div>
+            <div class="recommendation-content">${rec.recommendation}</div>
+            <div class="recommendation-category category-${typeClass}">${rec.category || 'Neutral'}</div>
+          `;
+          
+          // Add click handler for expanding/collapsing
+          recItem.addEventListener('click', function() {
+            this.classList.toggle('expanded');
+          });
+          
+          recommendationsContainer.appendChild(recItem);
+        });
+      });
+    } catch (error) {
+      console.error("Error loading recommendations:", error);
+      recommendationsContainer.innerHTML = '<div class="error-loading-recommendations">Failed to load recommendations. Please try again later.</div>';
+    }
+  }
+  
+  // Function to load and display goal impact analysis
+  async function loadGoalImpact() {
+    try {
+      goalImpactContainer.innerHTML = '<div class="loading-goal-impact">Analyzing purchase impact on your goals...</div>';
+      
+      // Get the current purchase under analysis
+      chrome.storage.local.get(['currentPurchaseAnalysis'], async (result) => {
+        const currentPurchase = result.currentPurchaseAnalysis;
+        
+        if (!currentPurchase) {
+          goalImpactContainer.innerHTML = `
+            <div class="no-goal-impact">
+              <p>No current purchase to analyze. Goal impact will be shown when you're browsing an online shopping cart.</p>
+            </div>`;
+          return;
+        }
+        
+        try {
+          // Get user goals
+          const goals = await getUserGoals();
+          
+          if (!goals || goals.length === 0) {
+            goalImpactContainer.innerHTML = '<div class="no-goals">No goals found to analyze impact against.</div>';
+            return;
+          }
+          
+          // Calculate impact on each goal
+          const impactAnalysis = await calculateGoalImpact(currentPurchase, goals);
+          
+          // Clear the container
+          goalImpactContainer.innerHTML = '';
+          
+          // Add purchase details
+          const purchaseDetails = document.createElement('div');
+          purchaseDetails.className = 'purchase-details';
+          purchaseDetails.innerHTML = `
+            <h3>Current Purchase</h3>
+            <p>${currentPurchase.description || 'Unknown purchase'}</p>
+            <p class="purchase-price">${currentPurchase.estimatedPrice || 'Price unknown'}</p>
+          `;
+          goalImpactContainer.appendChild(purchaseDetails);
+          
+          // Add impact analysis for each goal
+          const impactList = document.createElement('div');
+          impactList.className = 'impact-list';
+          
+          impactAnalysis.forEach(impact => {
+            const impactItem = document.createElement('div');
+            impactItem.className = `impact-item ${impact.severity}`;
+            impactItem.innerHTML = `
+              <div class="impact-header">
+                <div class="impact-goal-name">${impact.goalName}</div>
+                <div class="impact-severity-badge">${impact.severityLabel}</div>
+              </div>
+              <div class="impact-details">
+                <p>${impact.message}</p>
+                <div class="impact-metrics">
+                  <div class="impact-metric">
+                    <span class="metric-label">Delay:</span>
+                    <span class="metric-value">${impact.delay} days</span>
+                  </div>
+                  <div class="impact-metric">
+                    <span class="metric-label">% of goal:</span>
+                    <span class="metric-value">${impact.percentageOfGoal}%</span>
+                  </div>
+                </div>
+              </div>
+            `;
+            
+            impactList.appendChild(impactItem);
+          });
+          
+          goalImpactContainer.appendChild(impactList);
+          
+        } catch (error) {
+          console.error("Error calculating goal impact:", error);
+          goalImpactContainer.innerHTML = '<div class="error-calculating-impact">Failed to calculate goal impact. Please try again later.</div>';
+        }
+      });
+    } catch (error) {
+      console.error("Error loading goal impact:", error);
+      goalImpactContainer.innerHTML = '<div class="error-loading-goal-impact">Failed to load goal impact. Please try again later.</div>';
     }
   }
 
@@ -381,6 +536,51 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Helper function to calculate goal impact (placeholder for actual implementation)
+  async function calculateGoalImpact(purchase, goals) {
+    // This is a mock implementation - in real app this would call an API
+    return goals.map(goal => {
+      // Simulate calculation based on purchase amount and goal details
+      const purchaseAmount = parseFloat(purchase.estimatedPrice?.replace(/[^0-9.-]+/g, '') || 0);
+      const dailyContribution = goal.currentAmount / getDaysBetween(new Date(goal.createdAt), new Date());
+      const delay = Math.ceil(purchaseAmount / dailyContribution);
+      const percentageOfGoal = Math.round((purchaseAmount / goal.targetAmount) * 100);
+      
+      // Determine severity based on percentage of goal
+      let severity = 'low';
+      let severityLabel = 'Low Impact';
+      if (percentageOfGoal > 30) {
+        severity = 'high';
+        severityLabel = 'High Impact';
+      } else if (percentageOfGoal > 10) {
+        severity = 'medium';
+        severityLabel = 'Medium Impact';
+      }
+      
+      // Create impact message
+      let message = `This purchase could delay your ${goal.name} by approximately ${delay} days.`;
+      if (severity === 'high') {
+        message = `Warning: This purchase represents a significant portion (${percentageOfGoal}%) of your ${goal.name} goal and could delay it by ${delay} days.`;
+      }
+      
+      return {
+        goalName: goal.name,
+        delay,
+        percentageOfGoal,
+        severity,
+        severityLabel,
+        message
+      };
+    });
+  }
+  
+  // Helper function to calculate days between two dates
+  function getDaysBetween(startDate, endDate) {
+    const oneDay = 24 * 60 * 60 * 1000; // hours*minutes*seconds*milliseconds
+    const diffDays = Math.round(Math.abs((startDate - endDate) / oneDay));
+    return diffDays > 0 ? diffDays : 1; // Avoid division by zero
+  }
+
   // Check if the user is already logged in
   if (await isLoggedIn()) {
     console.log("User is already logged in, skipping login form");
@@ -398,6 +598,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Load user subscriptions
     loadUserSubscriptions();
+    
+    // Load saved recommendations
+    loadRecommendations();
+    
+    // Load goal impact analysis if available
+    loadGoalImpact();
     
     // Update fraud guard status
     updateFraudGuardStatus();
@@ -430,6 +636,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Load user subscriptions after login
       loadUserSubscriptions();
       
+      // Load saved recommendations after login
+      loadRecommendations();
+      
+      // Load goal impact analysis after login
+      loadGoalImpact();
+      
       // Update fraud guard status after login
       updateFraudGuardStatus();
     } catch (error) {
@@ -460,7 +672,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       this.classList.add('active');
 
       // Hide all sections
-      const allSections = document.querySelectorAll('#home, #alerts, #accounts, #payments, #cards, #fraudguard');
+      const allSections = document.querySelectorAll('#home, #alerts, #accounts, #recommendations, #goalimpact, #fraudguard');
       allSections.forEach(section => section.style.display = 'none');
 
       // Show the target section
@@ -497,6 +709,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             // No stored result, update the fraud guard status
             updateFraudGuardStatus();
           }
+        } else if (sectionId === 'recommendations') {
+          // Refresh recommendations when tab is selected
+          loadRecommendations();
+        } else if (sectionId === 'goalimpact') {
+          // Refresh goal impact analysis when tab is selected
+          loadGoalImpact();
         }
       }
     });
