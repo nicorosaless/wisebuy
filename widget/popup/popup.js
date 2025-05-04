@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const fraudIconContainer = document.querySelector(".fraud-icon-container .shield-icon");
   // Recommendations container
   const recommendationsContainer = document.getElementById("recommendations-container");
+  const clearButton = document.getElementById("clear-recommendations");
   // Goal impact container
   const goalImpactContainer = document.getElementById("goal-impact-container");
 
@@ -102,8 +103,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         
         if (!recommendations || recommendations.length === 0) {
           recommendationsContainer.innerHTML = '<div class="no-recommendations">No recommendations available yet. Recommendations will appear here after analyzing your purchases.</div>';
+          // Disable clear button when no recommendations
+          clearButton.disabled = true;
+          clearButton.style.opacity = '0.5';
+          clearButton.style.cursor = 'default';
           return;
         }
+        
+        // Enable clear button when there are recommendations
+        clearButton.disabled = false;
+        clearButton.style.opacity = '1';
+        clearButton.style.cursor = 'pointer';
         
         // Clear the container
         recommendationsContainer.innerHTML = '';
@@ -112,9 +122,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         recommendations.forEach(rec => {
           // Determine type class based on category
           let typeClass = 'neutral';
-          if (rec.category && rec.category.toLowerCase().includes('compulsiva')) {
+          if (rec.category && rec.category.toLowerCase().includes('compulsive')) {
             typeClass = 'compulsive';
-          } else if (rec.category && rec.category.toLowerCase().includes('adecuada')) {
+          } else if (rec.category && rec.category.toLowerCase().includes('adequate')) {
             typeClass = 'correct';
           }
           
@@ -607,6 +617,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Update fraud guard status
     updateFraudGuardStatus();
+    
+    // Add event listener for clearing recommendations
+    document.getElementById("clear-recommendations").addEventListener("click", () => {
+      if (confirm("Are you sure you want to clear all purchase recommendations?")) {
+        chrome.storage.local.remove(['storedRecommendations'], () => {
+          console.log('All recommendations cleared');
+          loadRecommendations(); // Reload the recommendations section
+        });
+      }
+    });
   } else {
     // User is not logged in, show login form
     loginForm.style.display = "block";
