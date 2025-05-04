@@ -305,9 +305,89 @@ function sendHtmlBodyToServer(htmlBody) {
             notification.close();
           }, 10000);
         }, 500); // Small delay to show completed progress bar
-        
-        // Start listening for new transactions
-        listenForNewTransaction(data.description);
+        // recomend and categorize
+        // Obtener transacciones del usuario autenticado
+        const token = getSessionToken();
+        fetch('http://127.0.0.1:8000/transactions', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(txData => {
+          // Obtener objetivos financieros del usuario
+          return fetch('http://127.0.0.1:8000/get-user-goals', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+          })
+          .then(res => res.json())
+          .then(goalsData => {
+            const userGoals = goalsData.goals || [];
+            console.log('Objetivos financieros cargados:', userGoals.length > 0 ? userGoals : 'No se encontraron objetivos');
+            // Llamar a recomendación con transacciones y objetivos
+            return fetch('http://127.0.0.1:8000/recommend-and-categorize', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ 
+                transactions: txData.transactions, 
+                purchase_description: data.description,
+                user_goals: userGoals
+              })
+            });
+          })
+          .catch(err => {
+            console.error('Error fetching user goals:', err);
+            // Continuar sin objetivos si hay error
+            return fetch('http://127.0.0.1:8000/recommend-and-categorize', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ 
+                transactions: txData.transactions, 
+                purchase_description: data.description,
+                user_goals: [] 
+              })
+            });
+          });
+        })
+        .then(res => res.json())
+        .then(recData => {
+          // Crear notificación con la recomendación y categoría
+          let categoryColor = '#4caf50'; // Verde por defecto (neutral)
+          if (recData.category && recData.category.toLowerCase().includes('compulsiva')) {
+            categoryColor = '#f44336'; // Rojo para compra compulsiva
+          } else if (recData.category && recData.category.toLowerCase().includes('adecuada')) {
+            categoryColor = '#2196F3'; // Azul para compra adecuada
+          }
+          
+          const recNotification = showNotification(`${recData.recommendation || 'Sin recomendación disponible'}`, false);
+          recNotification.setColor(categoryColor);
+          
+          // Agregar la categoría debajo si existe
+          if (recData.category) {
+            const categoryElement = document.createElement('div');
+            categoryElement.style.cssText = 'font-weight: bold; margin-top: 8px; text-align: right;';
+            categoryElement.textContent = `Categoría: ${recData.category}`;
+            recNotification.element.appendChild(categoryElement);
+          }
+          
+          // Mantener visible por más tiempo por ser información importante
+          setTimeout(() => {
+            recNotification.close();
+          }, 20000);
+          
+          console.log('Recomendación procesada:', recData);
+          // Iniciar monitoreo tras obtener recomendación
+          listenForNewTransaction(data.description);
+        })
+        .catch(err => {
+          console.error('Error fetching recommendation or transactions:', err);
+          // Iniciar monitoreo incluso con error
+          listenForNewTransaction(data.description);
+        });
+
       } else {
         console.error('Error:', data);
         notification.setColor('#ff9800'); // Orange for error

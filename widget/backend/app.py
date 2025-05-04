@@ -98,7 +98,7 @@ async def generate_description(data: HTMLBody):
             raise HTTPException(status_code=400, detail="El url es requerido")
 
         response = openai.ChatCompletion.create(
-            model=barato,
+            model=demosigma,
             messages=[
                 {"role": "system", "content": "You are an AI assistant specialized in analyzing e-commerce transactions. Your task is to extract and mention only the product purchase details from the HTML content and explicitly include the website where the purchase was made. For example: Purchased a black hoodie (€39.99) , a pair of shoes (€24.99) and a necklace (€6.99) from urbanoutfitters.com"},
                 {"role": "user", "content": f"Website URL: {web_url}\nHTML Content: {body}\n\nPlease extract the product purchase details and include the website where the purchase was made."}
@@ -174,23 +174,21 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="Invalid token")
 
 @app.get("/get-user-goals")
-async def get_user_goals(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    try:
-        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if "email" in decoded_token:
-            user = users_collection.find_one({"email": decoded_token["email"]})
-            if not user:
-                raise HTTPException(status_code=404, detail="User not found")
-            
-            # Extract goals from user document
-            goals = user.get("goals", [])
-            
-            # Return maximum of 3 goals
-            return {"goals": goals[:3]}
-        raise HTTPException(status_code=401, detail="Invalid token")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+async def get_user_goals():
+    """
+    Obtiene los objetivos financieros del usuario desde la colección de usuarios.
+    """
+    # Por ahora, sin autenticación, tomamos un usuario para testing
+    # En una implementación real, se obtendría el email del token JWT
+    user_cursor = users_collection.find_one()
+    
+    if not user_cursor:
+        return {"goals": []}
+    
+    # Los goals están en un array dentro del documento del usuario
+    goals = user_cursor.get("goals", [])
+    
+    return {"goals": goals}
 
 # Modelo para actualizar transacciones
 class TransactionUpdate(BaseModel):
@@ -297,3 +295,86 @@ async def add_test_transaction():
     }
     result = transactions_collection.insert_one(transaction)
     return {"success": True, "transaction_id": str(result.inserted_id)}
+
+@app.get("/transactions")
+async def get_transactions() -> dict:
+    """
+    Devuelve la lista de transacciones (sin requerir autenticación durante pruebas).
+    """
+    tx_cursor = transactions_collection.find()
+    transactions = []
+    for tx in tx_cursor:
+        tx_data = {
+            "_id": {"$oid": str(tx.get("_id"))},
+            "email": tx.get("email"),
+            "storeName": tx.get("storeName"),
+            "date": tx.get("date"),
+            "description": tx.get("description"),
+            "total": tx.get("total"),
+            "processed": tx.get("processed", False)
+        }
+        transactions.append(tx_data)
+    return {"transactions": transactions}
+
+async def recommend_and_categorize(transactions: list, purchase_description: str, user_goals: list = None) -> dict:
+    """
+    Genera una recomendación para la compra y la categoriza en una de tres categorías:
+    'compra compulsiva', 'compra adecuada' o 'compra neutra'.
+    
+    Args:
+        transactions: Lista de transacciones del usuario
+        purchase_description: Descripción de la compra potencial
+        user_goals: Lista de objetivos financieros del usuario (opcional)
+    """
+    # Mensaje de sistema para orientar al LLM
+    system_message = """You are an AI assistant specialized in personal finance advice. Your task is to generate a recommendation about a potential purchase and categorize this purchase into one of three categories: 'compulsive purchase', 'adequate purchase', or 'neutral purchase'. 
+
+Consider the user's financial goals when making your recommendation, if provided. Align your advice with these goals.
+
+Return the output as a JSON object with two fields: 'recommendation' (a string with your advice) and 'category' (one of the three categories).
+
+    Ejemplo 1:
+    This appears to be a standard grocery purchase. I notice you shopped at three different grocery stores (Mercadona, Lidl, and Alcampo) within one week. While grocery shopping is essential, you might consider consolidating trips to save time and potentially reduce impulse purchases. Given your goal of "saving €500 monthly for a vacation fund", planning your grocery shopping more efficiently could help you allocate more money to your savings. (adequate purchase)
+
+    Ejemplo 2:
+    You bought AirPods just 5 months ago. Could this be a replacement for a lost item? Since one of your financial goals is "reducing unnecessary tech spending", consider investing in AppleCare or loss insurance rather than frequent replacements. Otherwise, you might want to double-check if the current ones are still functional. Check your drawer or backpack—maybe they're just misplaced. This approach aligns better with your goal of "building an emergency fund". (neutral purchase)
+
+    Ejemplo 3:
+    I notice you're considering a significant electronics purchase - an iPhone 16 Pro Max at €1,299 - during late night hours. This contradicts your stated goal of "paying off student loans by December". This purchase represents a substantial portion of your monthly income, and I see you recently purchased phone accessories, which suggests you may already have a functioning phone. Consider waiting until morning to finalize this high-value purchase and reflecting on whether this aligns with your goal of "limiting discretionary spending to €200/month". Decisions made during normal waking hours tend to be more aligned with long-term financial objectives. (compulsive purchase)"""
+    # Mensaje de usuario con descripción, transacciones y objetivos
+    user_message = (
+        f"Purchase Description: {purchase_description}\n"
+        f"User Transactions: {json.dumps(transactions, ensure_ascii=False)}"
+    )
+    
+    # Agregar los objetivos del usuario si están disponibles
+    if user_goals and len(user_goals) > 0:
+        user_message += f"\nUser Goals: {json.dumps(user_goals, ensure_ascii=False)}"
+    
+    # Llamada al modelo
+    response = openai.ChatCompletion.create(
+        model=demosigma,
+        messages=[
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": user_message},
+        ],
+        temperature=0.2,
+        max_tokens=500,
+    )
+    content = response["choices"][0]["message"]["content"]
+    # Intentar parsear JSON de salida
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        return {"recommendation": content, "category": None}
+
+class RecommendRequest(BaseModel):
+    transactions: list
+    purchase_description: str
+    user_goals: list = []
+
+@app.post("/recommend-and-categorize")
+async def recommend_and_categorize_endpoint(request: RecommendRequest) -> dict:
+    # Llamar a la lógica de recomendación y categorización sin validar token
+    result = await recommend_and_categorize(request.transactions, request.purchase_description, request.user_goals)
+    return result
